@@ -1,8 +1,17 @@
 import { describe, it, expect } from 'vitest';
 import { JSDOM } from 'jsdom';
-import { extractContent } from './extractor';
+import { extractContent, isExtractionError } from './extractor';
 
 describe('extractContent', () => {
+  const createCompletedDOM = (html: string, url: string) => {
+    const dom = new JSDOM(html, { url });
+    Object.defineProperty(dom.window.document, 'readyState', {
+      writable: true,
+      value: 'complete',
+    });
+    return dom;
+  };
+
   it('should extract content from valid article DOM', () => {
     const html = `
       <!DOCTYPE html>
@@ -23,18 +32,76 @@ describe('extractContent', () => {
       </html>
     `;
 
-    const dom = new JSDOM(html);
+    const dom = createCompletedDOM(html, 'https://example.com/article');
     const result = extractContent(dom.window.document, 'https://example.com/article');
 
-    expect(result).not.toBeNull();
-    expect(result?.title).toBe('Test Article Title');
-    expect(result?.content).toBeTruthy();
-    expect(result?.content.length).toBeGreaterThan(100);
-    expect(result?.url).toBe('https://example.com/article');
-    expect(result?.lang).toBe('en');
+    expect(isExtractionError(result)).toBe(false);
+    if (!isExtractionError(result)) {
+      expect(result.title).toBe('Test Article Title');
+      expect(result.content).toBeTruthy();
+      expect(result.content.length).toBeGreaterThan(100);
+      expect(result.url).toBe('https://example.com/article');
+      expect(result.lang).toBe('en');
+    }
   });
 
-  it('should return null for non-article page (Readability fails)', () => {
+  it('should return UNSUPPORTED_PAGE error for chrome:// URLs', () => {
+    const dom = createCompletedDOM('<!DOCTYPE html><html><body></body></html>', 'chrome://settings');
+    const result = extractContent(dom.window.document, 'chrome://settings');
+
+    expect(isExtractionError(result)).toBe(true);
+    if (isExtractionError(result)) {
+      expect(result.error.code).toBe('UNSUPPORTED_PAGE');
+      expect(result.error.message).toContain('不支持摘要');
+    }
+  });
+
+  it('should return UNSUPPORTED_PAGE error for about: URLs', () => {
+    const dom = createCompletedDOM('<!DOCTYPE html><html><body></body></html>', 'about:blank');
+    const result = extractContent(dom.window.document, 'about:blank');
+
+    expect(isExtractionError(result)).toBe(true);
+    if (isExtractionError(result)) {
+      expect(result.error.code).toBe('UNSUPPORTED_PAGE');
+    }
+  });
+
+  it('should return UNSUPPORTED_PAGE error for chrome-extension:// URLs', () => {
+    const dom = createCompletedDOM('<!DOCTYPE html><html><body></body></html>', 'chrome-extension://abc123');
+    const result = extractContent(dom.window.document, 'chrome-extension://abc123/popup.html');
+
+    expect(isExtractionError(result)).toBe(true);
+    if (isExtractionError(result)) {
+      expect(result.error.code).toBe('UNSUPPORTED_PAGE');
+    }
+  });
+
+  it('should return UNSUPPORTED_PAGE error for edge:// URLs', () => {
+    const dom = createCompletedDOM('<!DOCTYPE html><html><body></body></html>', 'edge://settings');
+    const result = extractContent(dom.window.document, 'edge://settings');
+
+    expect(isExtractionError(result)).toBe(true);
+    if (isExtractionError(result)) {
+      expect(result.error.code).toBe('UNSUPPORTED_PAGE');
+    }
+  });
+
+  it('should return PAGE_LOADING error when document is still loading', () => {
+    const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>', { url: 'https://example.com' });
+    Object.defineProperty(dom.window.document, 'readyState', {
+      writable: true,
+      value: 'loading',
+    });
+    const result = extractContent(dom.window.document, 'https://example.com/article');
+
+    expect(isExtractionError(result)).toBe(true);
+    if (isExtractionError(result)) {
+      expect(result.error.code).toBe('PAGE_LOADING');
+      expect(result.error.message).toContain('仍在加载');
+    }
+  });
+
+  it('should return NO_ARTICLE_CONTENT error for non-article page', () => {
     const html = `
       <!DOCTYPE html>
       <html>
@@ -42,19 +109,25 @@ describe('extractContent', () => {
           <title>Not an Article</title>
         </head>
         <body>
-          <div>Just a tiny bit of text</div>
+          <div id="wrapper">
+            <nav>Navigation here</nav>
+            <div>Some random text</div>
+            <footer>Footer content</footer>
+          </div>
         </body>
       </html>
     `;
 
-    const dom = new JSDOM(html);
+    const dom = createCompletedDOM(html, 'https://example.com/not-article');
     const result = extractContent(dom.window.document, 'https://example.com/not-article');
 
-    expect(result).toBeNull();
+    expect(isExtractionError(result)).toBe(true);
+    if (isExtractionError(result)) {
+      expect(['NO_ARTICLE_CONTENT', 'CONTENT_TOO_SHORT']).toContain(result.error.code);
+    }
   });
 
-  it('should return null for too-short content (<100 characters)', () => {
-    // Create a minimal article that Readability might parse but content is too short
+  it('should return CONTENT_TOO_SHORT error for content less than 100 chars', () => {
     const html = `
       <!DOCTYPE html>
       <html lang="zh-CN">
@@ -70,10 +143,14 @@ describe('extractContent', () => {
       </html>
     `;
 
-    const dom = new JSDOM(html);
+    const dom = createCompletedDOM(html, 'https://example.com/short');
     const result = extractContent(dom.window.document, 'https://example.com/short');
 
-    expect(result).toBeNull();
+    expect(isExtractionError(result)).toBe(true);
+    if (isExtractionError(result)) {
+      expect(result.error.code).toBe('CONTENT_TOO_SHORT');
+      expect(result.error.message).toContain('过短');
+    }
   });
 
   it('should handle missing lang attribute gracefully', () => {
@@ -96,11 +173,13 @@ describe('extractContent', () => {
       </html>
     `;
 
-    const dom = new JSDOM(html);
+    const dom = createCompletedDOM(html, 'https://example.com/no-lang');
     const result = extractContent(dom.window.document, 'https://example.com/no-lang');
 
-    expect(result).not.toBeNull();
-    expect(result?.lang).toBeUndefined();
+    expect(isExtractionError(result)).toBe(false);
+    if (!isExtractionError(result)) {
+      expect(result.lang).toBeUndefined();
+    }
   });
 
   it('should not modify the original document', () => {
@@ -123,7 +202,7 @@ describe('extractContent', () => {
       </html>
     `;
 
-    const dom = new JSDOM(html);
+    const dom = createCompletedDOM(html, 'https://example.com/original');
     const originalBody = dom.window.document.body.innerHTML;
 
     extractContent(dom.window.document, 'https://example.com/original');

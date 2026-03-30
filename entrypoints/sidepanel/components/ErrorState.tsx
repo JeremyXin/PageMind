@@ -18,20 +18,52 @@ const ERROR_MESSAGES: Record<string, { title: string; message: string; showSetti
   },
   RATE_LIMIT: {
     title: '请求频率超限',
-    message: 'API 请求频率超过限制，请稍后再试。如果问题持续，请检查您的 API 配额。',
+    message: '请求过于频繁，请稍后重试。如果问题持续，请检查您的 API 配额。',
+  },
+  TIMEOUT: {
+    title: '请求超时',
+    message: '请求超时（30秒），请重试。如果问题持续，可能是网络较慢或 API 服务繁忙。',
   },
   NETWORK_ERROR: {
     title: '网络连接失败',
     message: '无法连接到 API 服务器，请检查您的网络连接或 Base URL 配置。',
     showSettings: true,
   },
+  SERVER_ERROR: {
+    title: 'API 服务器错误',
+    message: 'API 服务器出现错误，请稍后重试。',
+  },
+  INVALID_RESPONSE_FORMAT: {
+    title: 'AI 返回格式异常',
+    message: 'AI 返回的数据格式异常，请重试。如果问题持续，可能是模型配置问题。',
+  },
+  UNSUPPORTED_PAGE: {
+    title: '页面类型不支持',
+    message: '该页面类型不支持摘要（浏览器内部页面如 chrome://、about: 等）。',
+  },
+  PAGE_LOADING: {
+    title: '页面仍在加载',
+    message: '页面仍在加载中，请稍后重试。',
+  },
+  NO_ARTICLE_CONTENT: {
+    title: '无法提取内容',
+    message: '无法提取文章内容，该页面可能不是文章类型或内容为空。',
+  },
+  CONTENT_TOO_SHORT: {
+    title: '内容过短',
+    message: '页面内容过短，无法生成有意义的摘要。',
+  },
   CONTENT_EXTRACTION_FAILED: {
     title: '内容提取失败',
-    message: '无法从当前页面提取内容。该页面可能使用了特殊的加载方式，或内容为空。',
+    message: '无法从当前页面提取内容。该页面可能使用了特殊的加载方式。',
   },
   AI_ERROR: {
     title: 'AI 处理失败',
     message: '摘要生成过程中出现错误，请重试。如果问题持续，可能是 API 服务异常。',
+  },
+  API_ERROR: {
+    title: 'API 请求失败',
+    message: 'API 请求失败，请稍后重试。',
   },
   UNKNOWN: {
     title: '未知错误',
@@ -62,7 +94,7 @@ export default function ErrorState({ error, onRetry }: ErrorStateProps) {
       <h3 className="text-lg font-semibold text-gray-900 mb-2 text-center">{errorInfo.title}</h3>
       <p className="text-sm text-gray-600 text-center mb-1">{errorInfo.message}</p>
       
-      {error.message && (
+      {error.message && error.message !== errorInfo.message && (
         <p className="text-xs text-gray-500 text-center mt-2 px-4 py-2 bg-gray-50 rounded border border-gray-200 max-w-full break-words">
           {error.message}
         </p>

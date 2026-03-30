@@ -13,6 +13,10 @@ export default function App() {
   const [error, setError] = useState<ErrorResponse | null>(null);
 
   const handleSummarize = async () => {
+    if (state === 'extracting' || state === 'summarizing') {
+      return;
+    }
+
     try {
       setState('extracting');
       setError(null);
@@ -81,7 +85,8 @@ export default function App() {
               <p className="text-gray-600 text-sm mb-4">点击下方按钮，使用 AI 为当前页面生成结构化摘要</p>
               <button
                 onClick={handleSummarize}
-                className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
+                disabled={state === 'extracting' || state === 'summarizing'}
+                className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed disabled:hover:bg-gray-300"
               >
                 总结本页
               </button>

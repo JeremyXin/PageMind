@@ -1,4 +1,4 @@
-import { extractContent } from '@/utils/extractor';
+import { extractContent, isExtractionError } from '@/utils/extractor';
 import type { MessageRequest, MessageResponse, ExtractedContent } from '@/utils/types';
 
 export default defineContentScript({
@@ -14,18 +14,15 @@ export default defineContentScript({
       ) => {
         if (request.type === 'EXTRACT_CONTENT') {
           try {
-            const content = extractContent(document, location.href);
+            const result = extractContent(document, location.href);
 
-            if (content) {
-              sendResponse({ success: true, data: content });
-            } else {
+            if (isExtractionError(result)) {
               sendResponse({
                 success: false,
-                error: {
-                  code: 'EXTRACTION_FAILED',
-                  message: 'Unable to extract article content from this page',
-                },
+                error: result.error,
               });
+            } else {
+              sendResponse({ success: true, data: result });
             }
           } catch (error) {
             sendResponse({
