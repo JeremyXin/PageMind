@@ -1,0 +1,25 @@
+QA Scenario: Return null for non-article page
+=============================================
+
+Test: utils/extractor.test.ts - "should return null for non-article page (Readability fails)"
+
+Setup:
+- Created JSDOM with minimal non-article HTML:
+  - Basic <html> without lang
+  - <title>Not an Article</title>
+  - Single <div> with minimal text
+  
+Action:
+- Called extractContent(dom.window.document, "https://example.com/not-article")
+
+Assertions:
+✓ result === null
+
+Result: PASSED
+Evidence: Test confirmed Readability.parse() returns null for non-article pages
+
+Implementation Details:
+- Readability.js analyzes DOM structure and content
+- When article extraction fails, reader.parse() returns null
+- extractContent propagates null return when Readability fails
+- No error thrown - graceful null handling for non-article pages

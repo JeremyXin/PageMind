@@ -1,0 +1,27 @@
+QA Scenario: Return null for too-short content
+==============================================
+
+Test: utils/extractor.test.ts - "should return null for too-short content (<100 characters)"
+
+Setup:
+- Created JSDOM with minimal article:
+  - <html lang="zh-CN">
+  - <article> with <h1> and very short <p> (~17 characters)
+  - Structure valid for Readability but content minimal
+  
+Action:
+- Called extractContent(dom.window.document, "https://example.com/short")
+
+Assertions:
+✓ result === null
+
+Result: PASSED
+Evidence: Test confirmed content length validation works
+
+Implementation Details:
+- Readability.js successfully parses the article structure
+- article.textContent extracted and trimmed
+- Content length check: if (content.length < MIN_CONTENT_LENGTH) return null
+- MIN_CONTENT_LENGTH = 100 characters
+- Edge case: Readability succeeds but content insufficient → null returned
+- Prevents extraction of pages with trivial content (navigation, footers, etc.)

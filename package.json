@@ -1,0 +1,33 @@
+{
+  "name": "webpage-summary",
+  "description": "AI-powered webpage summary Chrome extension",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "wxt",
+    "build": "wxt build",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
+    "compile": "tsc --noEmit",
+    "postinstall": "wxt prepare"
+  },
+  "dependencies": {
+    "@mozilla/readability": "^0.6.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^28.0.1",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@webext-core/fake-browser": "^1.3.2",
+    "@wxt-dev/module-react": "^1.1.5",
+    "jsdom": "^29.0.1",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.0.0",
+    "wxt": "^0.20.20"
+  }
+}

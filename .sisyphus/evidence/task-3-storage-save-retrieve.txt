@@ -1,0 +1,25 @@
+# Task 3: Storage Save/Retrieve Evidence
+
+## Test Results
+```
+✓ storage > getSettings > should return default values when storage is empty
+✓ storage > getSettings > should return saved values from storage
+✓ storage > getSettings > should apply defaults for missing fields
+✓ storage > saveSettings > should save settings to storage
+✓ storage > saveSettings > should merge with existing settings when saving partial
+✓ storage > saveSettings > should handle partial updates correctly
+✓ storage > getApiKey > should return null when no API key is saved
+✓ storage > getApiKey > should return the saved API key
+✓ storage > getApiKey > should return null for empty string API key
+```
+
+## Implementation Details
+- File: `utils/storage.ts`
+- Test: `utils/storage.test.ts`
+- Mock: `@webext-core/fake-browser`
+- Storage: `chrome.storage.local` (via `browser.storage.local`)
+
+## Default Values
+- baseUrl: `https://api.openai.com/v1`
+- model: `gpt-4o-mini`
+- apiKey: `""` (empty string)

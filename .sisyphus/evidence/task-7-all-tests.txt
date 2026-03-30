@@ -1,0 +1,14 @@
+[?25l
+ RUN  v3.0.0 /Users/songjiayin/Leibaoxin/plugin/webpage_summary
+
+ ✓ utils/schemas.test.ts (25 tests) 41ms
+ ✓ messaging/messages.test.ts (11 tests) 35ms
+ ✓ utils/storage.test.ts (9 tests) 48ms
+ ✓ utils/extractor.test.ts (5 tests) 126ms
+
+ Test Files  4 passed (4)
+      Tests  50 passed (50)
+   Start at  10:13:41
+   Duration  1.57s (transform 223ms, setup 183ms, collect 973ms, tests 251ms, environment 1ms, prepare 528ms)
+
+[?25h

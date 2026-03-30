@@ -1,0 +1,57 @@
+# QA Evidence - Task 2: Invalid Schema Rejection
+
+## Scenario: Zod schema rejects invalid summary data
+
+### Test Results
+```
+✓ should reject when summary is not a string
+✓ should reject when summary is missing
+✓ should reject when keyPoints is not an array
+✓ should reject when keyPoints contains non-string items
+✓ should reject when viewpoints is not an array
+✓ should reject when viewpoints items are missing required fields
+✓ should reject when bestPractices is not an array
+✓ should reject when bestPractices contains non-string items
+✓ should reject empty object
+✓ should reject null
+✓ should reject undefined
+```
+
+### Invalid Data Test Cases
+
+| Test Case | Input | Expected Error |
+|-----------|-------|----------------|
+| Wrong type for summary | `{ summary: 123, ... }` | ZodError: Expected string, received number |
+| Missing summary | `{ keyPoints: [], ... }` | ZodError: Required |
+| keyPoints not array | `{ summary: "Test", keyPoints: "not-array", ... }` | ZodError: Expected array, received string |
+| keyPoints with non-string items | `{ summary: "Test", keyPoints: ["valid", 123], ... }` | ZodError: Expected string, received number |
+| viewpoints not array | `{ summary: "Test", viewpoints: "not-array", ... }` | ZodError: Expected array, received string |
+| Missing stance in viewpoint | `{ summary: "Test", viewpoints: [{ perspective: "Author" }], ... }` | ZodError: Required |
+| bestPractices not array | `{ summary: "Test", bestPractices: "not-array", ... }` | ZodError: Expected array, received string |
+| Empty object | `{}` | ZodError: Required (for all fields) |
+| Null input | `null` | ZodError: Expected object, received null |
+| Undefined input | `undefined` | ZodError: Required |
+
+### Error Message Quality
+All ZodError messages are descriptive and include:
+- Path to the invalid field
+- Expected type vs received type
+- Required field indicators
+
+Example error message:
+```
+[
+  {
+    "code": "invalid_type",
+    "expected": "string",
+    "received": "number",
+    "path": ["summary"],
+    "message": "Expected string, received number"
+  }
+]
+```
+
+## Summary
+
+All 11 invalid data rejection tests passed.
+Zod schema correctly validates and rejects malformed data with clear error messages.
