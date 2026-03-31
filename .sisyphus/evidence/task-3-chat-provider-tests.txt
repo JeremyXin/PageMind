@@ -1,0 +1,11 @@
+[?25l
+ RUN  v3.0.0 /Users/songjiayin/Leibaoxin/plugin/webpage_summary
+
+ ✓ providers/chat.test.ts (8 tests) 45ms
+
+ Test Files  1 passed (1)
+      Tests  8 passed (8)
+   Start at  10:04:02
+   Duration  527ms (transform 59ms, setup 18ms, collect 32ms, tests 45ms, environment 0ms, prepare 86ms)
+
+[?25h
