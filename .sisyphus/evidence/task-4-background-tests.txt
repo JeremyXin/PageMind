@@ -1,0 +1,14 @@
+[?25l
+ RUN  v3.0.0 /Users/songjiayin/Leibaoxin/plugin/webpage_summary
+
+stdout | entrypoints/background.test.ts > background handleChatPort > should send CHAT_STREAM_ERROR when apiKey is empty
+Background script initialized
+
+ ✓ entrypoints/background.test.ts (9 tests) 335ms
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  10:36:59
+   Duration  914ms (transform 86ms, setup 24ms, collect 60ms, tests 335ms, environment 0ms, prepare 82ms)
+
+[?25h

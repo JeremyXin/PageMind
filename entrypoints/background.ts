@@ -3,8 +3,16 @@ import type {
   MessageResponse,
   ExtractedContent,
   SummaryResult,
+  TestConnectionPayload,
+  TestConnectionResult,
+  ChatSendPayload,
 } from '../utils/types';
 import { getSettings } from '../utils/storage';
+import { OpenAIProvider } from '../providers/openai';
+import { ChatProvider } from '../providers/chat';
+import { getActiveSession, addMessage } from '../utils/chatStorage';
+
+let activeChatAbortController: AbortController | null = null;
 
 export default defineBackground(() => {
   console.log('Background script initialized');
@@ -16,6 +24,11 @@ export default defineBackground(() => {
   setInterval(() => {
     chrome.runtime.getPlatformInfo().catch(() => {});
   }, 20000);
+
+  chrome.runtime.onConnect.addListener((port) => {
+    if (port.name !== 'chat-stream') return;
+    handleChatPort(port);
+  });
 
   chrome.runtime.onMessage.addListener(
     (
@@ -38,10 +51,175 @@ export default defineBackground(() => {
         return true;
       }
 
+      if (message.type === 'EXTRACT_AND_SUMMARIZE') {
+        handleExtractAndSummarize(sender)
+          .then(sendResponse)
+          .catch((error) => {
+            sendResponse({
+              success: false,
+              error: { code: 'UNKNOWN', message: error.message || 'Unknown error occurred' },
+            });
+          });
+        return true;
+      }
+
+      if (message.type === 'TEST_CONNECTION') {
+        handleTestConnectionMessage(message as MessageRequest<TestConnectionPayload>)
+          .then(sendResponse)
+          .catch((error) => {
+            sendResponse({
+              success: false,
+              data: {
+                success: false,
+                errorCode: 'UNKNOWN',
+                message: error.message || 'Unknown error',
+              } satisfies TestConnectionResult,
+            });
+          });
+        return true;
+      }
+
       return false;
     }
   );
 });
+
+async function handleExtractAndSummarize(
+  sender: chrome.runtime.MessageSender
+): Promise<MessageResponse<SummaryResult>> {
+  const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+  const tab = tabs[0];
+
+  if (!tab?.id) {
+    return { success: false, error: { code: 'NO_TAB', message: '无法获取当前标签页' } };
+  }
+
+  const tabId = tab.id;
+  const tabUrl = tab.url ?? '';
+
+  if (tabUrl.startsWith('chrome://') || tabUrl.startsWith('chrome-extension://') || tabUrl.startsWith('about:') || tabUrl === '') {
+    return { success: false, error: { code: 'UNSUPPORTED_PAGE', message: '该页面类型不支持摘要' } };
+  }
+
+  const extracted = await extractFromTab(tabId);
+  if (!extracted.success || !extracted.data) {
+    return { success: false, error: extracted.error ?? { code: 'CONTENT_EXTRACTION_FAILED', message: '内容提取失败' } };
+  }
+
+  return handleSummarizeMessage({ type: 'SUMMARIZE', payload: extracted.data });
+}
+
+async function extractFromTab(tabId: number): Promise<MessageResponse<ExtractedContent>> {
+  try {
+    const response = await chrome.tabs.sendMessage(tabId, { type: 'EXTRACT_CONTENT' }) as MessageResponse<ExtractedContent>;
+    return response;
+  } catch {
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        files: ['content-scripts/content.js'],
+      });
+      await new Promise((r) => setTimeout(r, 300));
+      const response = await chrome.tabs.sendMessage(tabId, { type: 'EXTRACT_CONTENT' }) as MessageResponse<ExtractedContent>;
+      return response;
+    } catch (injectErr) {
+      return {
+        success: false,
+        error: {
+          code: 'CONTENT_EXTRACTION_FAILED',
+          message: '无法在该页面注入内容脚本，请刷新页面后重试',
+        },
+      };
+    }
+  }
+}
+
+async function handleTestConnectionMessage(
+  message: MessageRequest<TestConnectionPayload>
+): Promise<MessageResponse<TestConnectionResult>> {
+  const { apiKey, baseUrl, model } = message.payload!;
+  const base = baseUrl.replace(/\/$/, '');
+
+  try {
+    const modelsRes = await fetch(`${base}/models`, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      signal: AbortSignal.timeout(15000),
+    });
+
+    if (modelsRes.ok) {
+      return { success: true, data: { success: true } };
+    }
+
+    if (modelsRes.status === 401) {
+      return {
+        success: false,
+        data: { success: false, errorCode: 'INVALID_API_KEY', message: 'API Key 无效或未授权' },
+      };
+    }
+
+    if (modelsRes.status === 404) {
+      const chatRes = await fetch(`${base}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: 'user', content: 'hi' }],
+          max_tokens: 1,
+        }),
+        signal: AbortSignal.timeout(15000),
+      });
+
+      if (chatRes.ok) {
+        return { success: true, data: { success: true } };
+      }
+
+      if (chatRes.status === 401) {
+        return {
+          success: false,
+          data: { success: false, errorCode: 'INVALID_API_KEY', message: 'API Key 无效或未授权' },
+        };
+      }
+
+      const errBody = await chatRes.json().catch(() => ({})) as { error?: { message?: string } };
+      return {
+        success: false,
+        data: {
+          success: false,
+          errorCode: chatRes.status >= 500 ? 'SERVER_ERROR' : 'WRONG_URL',
+          message: errBody.error?.message ?? `HTTP ${chatRes.status}`,
+        },
+      };
+    }
+
+    const errBody = await modelsRes.json().catch(() => ({})) as { error?: { message?: string } };
+    return {
+      success: false,
+      data: {
+        success: false,
+        errorCode: modelsRes.status >= 500 ? 'SERVER_ERROR' : 'UNKNOWN',
+        message: errBody.error?.message ?? `HTTP ${modelsRes.status}`,
+      },
+    };
+  } catch (err) {
+    const isTimeout = err instanceof Error && err.name === 'TimeoutError';
+    return {
+      success: false,
+      data: {
+        success: false,
+        errorCode: 'NETWORK_ERROR',
+        message: isTimeout ? '连接超时（15秒），请检查网络或 Base URL' : '无法连接到服务器，请检查 Base URL 是否正确',
+      },
+    };
+  }
+}
 
 async function handleSummarizeMessage(
   message: MessageRequest<ExtractedContent>
@@ -59,24 +237,148 @@ async function handleSummarizeMessage(
       };
     }
 
-    const mockResult: SummaryResult = {
-      summary: 'Mock summary result',
-      keyPoints: ['Mock key point 1', 'Mock key point 2'],
-      viewpoints: [{ perspective: 'Mock perspective', stance: 'Mock stance' }],
-      bestPractices: ['Mock best practice 1'],
-    };
+    const provider = new OpenAIProvider({
+      apiKey: settings.apiKey,
+      baseUrl: settings.baseUrl,
+      model: settings.model,
+    });
+
+    const result = await provider.summarize(message.payload!);
 
     return {
       success: true,
-      data: mockResult,
+      data: result,
     };
-  } catch (error) {
+  } catch (error: any) {
+    if (error.code === 'INVALID_API_KEY' || error.code === 'RATE_LIMITED' || error.code === 'SERVER_ERROR') {
+      return {
+        success: false,
+        error: {
+          code: error.code,
+          message: error.message,
+        },
+      };
+    }
     return {
       success: false,
       error: {
         code: 'PROVIDER_ERROR',
-        message: (error as Error).message || 'Failed to generate summary',
+        message: error.message || 'Failed to generate summary',
       },
     };
   }
+}
+
+export function handleChatPort(port: chrome.runtime.Port) {
+  if (activeChatAbortController) {
+    activeChatAbortController.abort();
+  }
+
+  activeChatAbortController = new AbortController();
+  const currentAbortController = activeChatAbortController;
+
+  port.onMessage.addListener(async (message: any) => {
+    if (message.type === 'CHAT_SEND') {
+      const payload = message.payload as ChatSendPayload;
+      
+      try {
+        const settings = await getSettings();
+        
+        if (!settings.apiKey) {
+          port.postMessage({
+            type: 'CHAT_STREAM_ERROR',
+            error: {
+              code: 'NO_API_KEY',
+              message: '请先在设置中填写 API Key',
+            },
+          });
+          return;
+        }
+
+        if (!payload.message || payload.message.trim() === '') {
+          return;
+        }
+
+        const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [];
+
+        let systemPrompt = '你是一个有帮助的AI助手。';
+        
+        if (payload.pageContext) {
+          const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+          const currentTabUrl = tabs[0]?.url;
+          
+          if (currentTabUrl === payload.pageContext.url) {
+            const summary = payload.pageContext.summary;
+            systemPrompt = `你是一个有帮助的AI助手。当前用户正在浏览以下页面：
+
+页面摘要：${summary.summary}
+
+关键点：
+${summary.keyPoints.map((p, i) => `${i + 1}. ${p}`).join('\n')}
+
+请基于这些信息回答用户的问题。`;
+          }
+        }
+
+        messages.push({ role: 'system', content: systemPrompt });
+
+        const activeSession = await getActiveSession();
+        if (activeSession && activeSession.messages.length > 0) {
+          const historyMessages = activeSession.messages
+            .slice(-50)
+            .map(m => ({
+              role: m.role,
+              content: m.content,
+            }));
+          messages.push(...historyMessages);
+        }
+
+        messages.push({ role: 'user', content: payload.message });
+
+        await addMessage(payload.sessionId, {
+          role: 'user',
+          content: payload.message,
+          timestamp: Date.now(),
+        });
+
+        const provider = new ChatProvider({
+          apiKey: settings.apiKey,
+          baseUrl: settings.baseUrl,
+          model: settings.model,
+        });
+
+        let fullResponse = '';
+        
+        for await (const chunk of provider.chat(messages, currentAbortController.signal)) {
+          fullResponse += chunk;
+          port.postMessage({
+            type: 'CHAT_STREAM_CHUNK',
+            content: chunk,
+          });
+        }
+
+        port.postMessage({
+          type: 'CHAT_STREAM_END',
+        });
+
+        await addMessage(payload.sessionId, {
+          role: 'assistant',
+          content: fullResponse,
+          timestamp: Date.now(),
+        });
+      } catch (err: any) {
+        port.postMessage({
+          type: 'CHAT_STREAM_ERROR',
+          error: {
+            code: 'CHAT_ERROR',
+            message: err.message || '聊天请求失败',
+          },
+        });
+      }
+    }
+  });
+
+  port.onDisconnect.addListener(() => {
+    currentAbortController.abort();
+  });
 }
