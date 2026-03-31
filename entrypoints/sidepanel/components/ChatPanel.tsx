@@ -9,9 +9,10 @@ interface ChatPanelProps {
     url: string;
     summary: SummaryResult;
   };
+  disabled?: boolean;
 }
 
-export default function ChatPanel({ summaryContext }: ChatPanelProps) {
+export default function ChatPanel({ summaryContext, disabled = false }: ChatPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
@@ -187,7 +188,7 @@ export default function ChatPanel({ summaryContext }: ChatPanelProps) {
       </div>
 
       <div className="px-4 py-3 border-t border-gray-200 shrink-0">
-        <ChatInput onSend={handleSend} disabled={isStreaming} />
+        <ChatInput onSend={handleSend} disabled={isStreaming || disabled} />
       </div>
     </div>
   );
