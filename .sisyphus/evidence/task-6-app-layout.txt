@@ -1,0 +1,67 @@
+[?25l
+ RUN  v3.0.0 /Users/songjiayin/Leibaoxin/plugin/webpage_summary
+
+ ✓ providers/chat.test.ts (8 tests) 131ms
+ ❯ providers/openai.test.ts (8 tests | 1 failed) 382ms
+   ✓ OpenAIProvider > should send correct request with auth header
+   ✓ OpenAIProvider > should throw INVALID_API_KEY on 401
+   ✓ OpenAIProvider > should throw RATE_LIMIT on 429
+   ✓ OpenAIProvider > should throw SERVER_ERROR on 500
+   × OpenAIProvider > should handle AbortError as TIMEOUT 223ms
+     → expected DOMException{ stack: 'AbortError: Th…', …(1) } to match object { code: 'TIMEOUT', …(1) }
+   ✓ OpenAIProvider > should throw NETWORK_ERROR on fetch failure
+   ✓ OpenAIProvider > should throw INVALID_RESPONSE_FORMAT on parse error
+   ✓ OpenAIProvider > should truncate content over 100000 chars
+stdout | entrypoints/background.test.ts > background handleChatPort > should send CHAT_STREAM_ERROR when apiKey is empty
+Background script initialized
+
+ ✓ utils/schemas.test.ts (25 tests) 725ms
+ ✓ messaging/messages.test.ts (11 tests) 128ms
+ ✓ utils/chatStorage.test.ts (16 tests) 1264ms
+   ✓ chatStorage > createSession > should auto-delete oldest session when MAX_SESSIONS is exceeded 337ms
+ ✓ entrypoints/background.test.ts (9 tests) 1204ms
+   ✓ background handleChatPort > should send CHAT_STREAM_ERROR when apiKey is empty 565ms
+ ✓ utils/extractor.test.ts (10 tests) 2902ms
+   ✓ extractContent > should extract content from valid article DOM 753ms
+   ✓ extractContent > should return UNSUPPORTED_PAGE error for chrome:// URLs 432ms
+   ✓ extractContent > should return NO_ARTICLE_CONTENT error for non-article page 479ms
+   ✓ extractContent > should handle missing lang attribute gracefully 318ms
+ ✓ utils/storage.test.ts (9 tests) 63ms
+ ✓ integration/flow.test.ts (3 tests) 216ms
+ ✓ entrypoints/sidepanel/components/ChatMessage.test.tsx (3 tests) 324ms
+   ✓ ChatMessage > should render user message with blue background 316ms
+ ✓ entrypoints/sidepanel/components/ChatInput.test.tsx (4 tests) 364ms
+   ✓ ChatInput > should not call onSend when message is empty and Enter is pressed 350ms
+ ✓ entrypoints/sidepanel/components/ChatPanel.test.tsx (7 tests) 667ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  providers/openai.test.ts > OpenAIProvider > should handle AbortError as TIMEOUT
+AssertionError: expected DOMException{ stack: 'AbortError: Th…', …(1) } to match object { code: 'TIMEOUT', …(1) }
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- {[39m
+[32m-   "code": "TIMEOUT",[39m
+[32m-   "message": StringContaining "30秒",[39m
+[32m- }[39m
+[31m+ DOMException {}[39m
+
+ ❯ providers/openai.test.ts:79:5
+     77|     mockFetch.mockRejectedValue(new DOMException('The operation was ab…
+     78|     
+     79|     await expect(provider.summarize(content)).rejects.toMatchObject({ 
+       |     ^
+     80|       code: 'TIMEOUT',
+     81|       message: expect.stringContaining('30秒') 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 11 passed (12)
+      Tests  1 failed | 112 passed (113)
+   Start at  11:13:33
+   Duration  27.15s (transform 5.91s, setup 4.91s, collect 12.63s, tests 8.37s, environment 101.30s, prepare 7.86s)
+
+[?25h

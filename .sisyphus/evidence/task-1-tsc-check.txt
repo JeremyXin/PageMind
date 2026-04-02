@@ -1,0 +1,24 @@
+entrypoints/background.ts(15,3): error TS2304: Cannot find name 'chrome'.
+entrypoints/background.ts(17,13): error TS7006: Parameter 'error' implicitly has an 'any' type.
+entrypoints/background.ts(20,5): error TS2304: Cannot find name 'chrome'.
+entrypoints/background.ts(23,3): error TS2304: Cannot find name 'chrome'.
+entrypoints/background.ts(26,15): error TS2503: Cannot find namespace 'chrome'.
+entrypoints/background.ts(78,3): error TS6133: 'sender' is declared but its value is never read.
+entrypoints/background.ts(78,11): error TS2503: Cannot find namespace 'chrome'.
+entrypoints/background.ts(80,22): error TS2304: Cannot find name 'chrome'.
+entrypoints/background.ts(104,28): error TS2304: Cannot find name 'chrome'.
+entrypoints/background.ts(108,13): error TS2304: Cannot find name 'chrome'.
+entrypoints/background.ts(113,30): error TS2304: Cannot find name 'chrome'.
+entrypoints/content.ts(10,7): error TS7030: Not all code paths return a value.
+entrypoints/sidepanel/App.tsx(79,27): error TS2367: This comparison appears to be unintentional because the types '"idle"' and '"loading"' have no overlap.
+messaging/messages.test.ts(176,9): error TS6133: 'sender' is declared but its value is never read.
+messaging/messages.test.ts(219,9): error TS6133: 'sender' is declared but its value is never read.
+utils/extractor.ts(44,19): error TS18049: 'article.textContent' is possibly 'null' or 'undefined'.
+utils/extractor.ts(58,5): error TS2322: Type 'string | null | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+utils/storage.test.ts(4,1): error TS6133: 'ExtensionSettings' is declared but its value is never read.
+utils/storage.ts(27,5): error TS2322: Type '{}' is not assignable to type 'string'.
+utils/storage.ts(28,5): error TS2322: Type '{}' is not assignable to type 'string'.
+utils/storage.ts(29,5): error TS2322: Type '{}' is not assignable to type 'string'.
+utils/storage.ts(53,27): error TS2339: Property 'length' does not exist on type '{}'.
+utils/storage.ts(53,40): error TS2322: Type '{}' is not assignable to type 'string'.

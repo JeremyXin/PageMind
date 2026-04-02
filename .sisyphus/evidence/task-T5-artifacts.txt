@@ -1,0 +1,32 @@
+=== BUILD ARTIFACTS ===
+.output/chrome-mv3/background.js
+.output/chrome-mv3/wxt.svg
+.output/chrome-mv3/chunks/sidepanel-B9-CHPYD.js
+.output/chrome-mv3/chunks/options-BhG0-XK7.js
+.output/chrome-mv3/chunks/main-SttOdFSV.js
+.output/chrome-mv3/content-scripts/content.js
+.output/chrome-mv3/content-scripts/floating-toolbar.js
+.output/chrome-mv3/manifest.json
+.output/chrome-mv3/options.html
+.output/chrome-mv3/sidepanel.html
+.output/chrome-mv3/icon/48.png
+.output/chrome-mv3/icon/128.png
+.output/chrome-mv3/icon/16.png
+.output/chrome-mv3/icon/32.png
+.output/chrome-mv3/icon/96.png
+.output/chrome-mv3/assets/main-Dsh2I6d7.css
+.output/chrome-mv3-dev/background.js
+.output/chrome-mv3-dev/wxt.svg
+.output/chrome-mv3-dev/chunks/reload-html-D8WGrJoN.js
+.output/chrome-mv3-dev/content-scripts/content.js
+.output/chrome-mv3-dev/manifest.json
+.output/chrome-mv3-dev/options.html
+.output/chrome-mv3-dev/sidepanel.html
+.output/chrome-mv3-dev/icon/48.png
+.output/chrome-mv3-dev/icon/128.png
+.output/chrome-mv3-dev/icon/16.png
+.output/chrome-mv3-dev/icon/32.png
+.output/chrome-mv3-dev/icon/96.png
+
+=== FLOATING TOOLBAR VERIFICATION ===
+-rw-r--r--@ 1 songjiayin  staff  6029  4  1 17:53 .output/chrome-mv3/content-scripts/floating-toolbar.js

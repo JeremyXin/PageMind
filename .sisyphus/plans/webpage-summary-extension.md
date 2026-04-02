@@ -477,7 +477,7 @@ Max Concurrent: 4 (Wave 2)
   - Files: utils/storage.ts, utils/storage.test.ts
   - Pre-commit: `pnpm test --run`
 
-- [ ] 4. AI Provider 抽象 + OpenAI 实现 (TDD)
+- [x] 4. AI Provider 抽象 + OpenAI 实现 (TDD)
 
   **What to do**:
   - **RED**: 先写测试 `providers/openai.test.ts`：
@@ -595,7 +595,7 @@ Max Concurrent: 4 (Wave 2)
   - Files: providers/ai-provider.ts, providers/openai.ts, providers/openai.test.ts, providers/prompts.ts
   - Pre-commit: `pnpm test --run`
 
-- [ ] 5. Content Script 内容提取 (TDD)
+- [x] 5. Content Script 内容提取 (TDD)
 
   **What to do**:
   - **RED**: 先写测试 `utils/extractor.test.ts`：
@@ -705,7 +705,7 @@ Max Concurrent: 4 (Wave 2)
   - Files: utils/extractor.ts, utils/extractor.test.ts, entrypoints/content.ts
   - Pre-commit: `pnpm test --run`
 
-- [ ] 6. Options 页面 UI
+- [x] 6. Options 页面 UI
 
   **What to do**:
   - 创建 `entrypoints/options/index.html` — Options 页面 HTML 入口
@@ -799,7 +799,7 @@ Max Concurrent: 4 (Wave 2)
   - Files: entrypoints/options/index.html, entrypoints/options/main.tsx, entrypoints/options/App.tsx
   - Pre-commit: `pnpm build`
 
-- [ ] 7. 消息传递层 + Service Worker (TDD)
+- [x] 7. 消息传递层 + Service Worker (TDD)
 
   **What to do**:
   - **RED**: 先写测试 `messaging/messages.test.ts`：
@@ -911,7 +911,7 @@ Max Concurrent: 4 (Wave 2)
   - Files: messaging/types.ts, messaging/sender.ts, messaging/messages.test.ts, entrypoints/background.ts
   - Pre-commit: `pnpm test --run`
 
-- [ ] 8. Side Panel UI
+- [x] 8. Side Panel UI
 
   **What to do**:
   - 创建 `entrypoints/sidepanel/index.html` — Side Panel HTML 入口
@@ -1027,7 +1027,7 @@ Max Concurrent: 4 (Wave 2)
   - Files: entrypoints/sidepanel/index.html, entrypoints/sidepanel/main.tsx, entrypoints/sidepanel/App.tsx, entrypoints/sidepanel/components/*.tsx
   - Pre-commit: `pnpm build`
 
-- [ ] 9. 端到端集成联调
+- [x] 9. 端到端集成联调
 
   **What to do**:
   - 连接所有模块，确保完整的用户流程工作：
@@ -1127,7 +1127,7 @@ Max Concurrent: 4 (Wave 2)
   - Files: entrypoints/background.ts, entrypoints/sidepanel/App.tsx, integration/flow.test.ts
   - Pre-commit: `pnpm build && pnpm test --run`
 
-- [ ] 10. 错误处理 + 边缘情况
+- [x] 10. 错误处理 + 边缘情况
 
   **What to do**:
   - **RED**: 写测试覆盖所有边缘情况
@@ -1237,19 +1237,19 @@ Max Concurrent: 4 (Wave 2)
 
 > 4 review agents run in PARALLEL. ALL must APPROVE. Present consolidated results to user and get explicit "okay" before completing.
 
-- [ ] F1. **Plan Compliance Audit** — `oracle`
+- [x] F1. **Plan Compliance Audit** — `oracle`
   Read the plan end-to-end. For each "Must Have": verify implementation exists (read file, run `pnpm build`, check dist/). For each "Must NOT Have": search codebase for forbidden patterns — reject with file:line if found. Check evidence files exist in .sisyphus/evidence/. Compare deliverables against plan.
   Output: `Must Have [N/N] | Must NOT Have [N/N] | Tasks [N/N] | VERDICT: APPROVE/REJECT`
 
-- [ ] F2. **Code Quality Review** — `unspecified-high`
+- [x] F2. **Code Quality Review** — `unspecified-high`
   Run `pnpm build` + `pnpm test`. Review all changed files for: `as any`/`@ts-ignore`, empty catches, console.log in prod, commented-out code, unused imports. Check AI slop: excessive comments, over-abstraction, generic names (data/result/item/temp). Verify TypeScript strict mode compliance.
   Output: `Build [PASS/FAIL] | Tests [N pass/N fail] | Files [N clean/N issues] | VERDICT`
 
-- [ ] F3. **Real Manual QA** — `unspecified-high`
+- [x] F3. **Real Manual QA** — `unspecified-high`
   Start from clean state. Load extension in Chrome via Bash/automation. Execute EVERY QA scenario from EVERY task — follow exact steps, capture evidence. Test cross-task integration (content extraction → AI call → UI render). Test edge cases: empty page, non-article page, invalid API key. Save to `.sisyphus/evidence/final-qa/`.
   Output: `Scenarios [N/N pass] | Integration [N/N] | Edge Cases [N tested] | VERDICT`
 
-- [ ] F4. **Scope Fidelity Check** — `deep`
+- [x] F4. **Scope Fidelity Check** — `deep`
   For each task: read "What to do", read actual code. Verify 1:1 — everything in spec was built (no missing), nothing beyond spec was built (no creep). Check "Must NOT do" compliance: no history, no export, no multi-provider impl, no custom prompts, no auto-summarize, no tiktoken. Flag unaccounted changes.
   Output: `Tasks [N/N compliant] | Scope Creep [CLEAN/N issues] | VERDICT`
 

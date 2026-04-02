@@ -1,0 +1,76 @@
+[?25l
+ RUN  v3.0.0 /Users/songjiayin/Leibaoxin/plugin/webpage_summary
+
+ ✓ integration/flow.test.ts > Integration Flow > should complete full flow: extract -> summarize -> display
+ ✓ integration/flow.test.ts > Integration Flow > should handle missing API key gracefully
+ ✓ integration/flow.test.ts > Integration Flow > should handle API errors in the flow
+ ✓ utils/schemas.test.ts > SummaryResultSchema > valid data parsing > should parse valid summary data with all fields
+ ✓ utils/schemas.test.ts > SummaryResultSchema > valid data parsing > should parse valid summary with empty arrays
+ ✓ utils/schemas.test.ts > SummaryResultSchema > valid data parsing > should parse valid summary with single item arrays
+ ✓ utils/schemas.test.ts > SummaryResultSchema > invalid data rejection > should reject when summary is not a string
+ ✓ utils/schemas.test.ts > SummaryResultSchema > invalid data rejection > should reject when summary is missing
+ ✓ utils/schemas.test.ts > SummaryResultSchema > invalid data rejection > should reject when keyPoints is not an array
+ ✓ utils/schemas.test.ts > SummaryResultSchema > invalid data rejection > should reject when keyPoints contains non-string items
+ ✓ utils/schemas.test.ts > SummaryResultSchema > invalid data rejection > should reject when viewpoints is not an array
+ ✓ utils/schemas.test.ts > SummaryResultSchema > invalid data rejection > should reject when viewpoints items are missing required fields
+ ✓ utils/schemas.test.ts > SummaryResultSchema > invalid data rejection > should reject when bestPractices is not an array
+ ✓ utils/schemas.test.ts > SummaryResultSchema > invalid data rejection > should reject when bestPractices contains non-string items
+ ✓ utils/schemas.test.ts > SummaryResultSchema > invalid data rejection > should reject empty object
+ ✓ utils/schemas.test.ts > SummaryResultSchema > invalid data rejection > should reject null
+ ✓ utils/schemas.test.ts > SummaryResultSchema > invalid data rejection > should reject undefined
+ ✓ utils/schemas.test.ts > SummaryResultSchema > type inference > should have correct TypeScript type inference
+ ✓ utils/schemas.test.ts > ViewpointSchema > should parse valid viewpoint
+ ✓ utils/schemas.test.ts > ViewpointSchema > should reject when perspective is missing
+ ✓ utils/schemas.test.ts > ViewpointSchema > should reject when stance is missing
+ ✓ utils/schemas.test.ts > ViewpointSchema > should reject non-string values
+ ✓ utils/schemas.test.ts > Type definitions > SummaryResult type should match schema structure
+ ✓ utils/schemas.test.ts > Type definitions > ExtractedContent type should have required fields
+ ✓ utils/schemas.test.ts > Type definitions > ExtractedContent type should accept optional lang field
+ ✓ utils/schemas.test.ts > Type definitions > ExtensionSettings type should have required fields
+ ✓ utils/schemas.test.ts > Type definitions > MessageType enum should have expected values
+ ✓ utils/schemas.test.ts > Type definitions > AIProvider interface should be implementable
+ ✓ messaging/messages.test.ts > messaging > message type safety > should create EXTRACT_CONTENT message with correct type
+ ✓ messaging/messages.test.ts > messaging > message type safety > should create SUMMARIZE message with correct payload type
+ ✓ messaging/messages.test.ts > messaging > message type safety > should create success response with correct data type
+ ✓ messaging/messages.test.ts > messaging > message type safety > should create error response with correct error type
+ ✓ messaging/messages.test.ts > messaging > sendToContentScript > should call chrome.tabs.sendMessage with correct parameters
+ ✓ messaging/messages.test.ts > messaging > sendToContentScript > should handle errors from content script
+ ✓ messaging/messages.test.ts > messaging > sendToBackground > should call chrome.runtime.sendMessage with correct parameters
+ ✓ messaging/messages.test.ts > messaging > sendToBackground > should handle errors from background script
+ ✓ messaging/messages.test.ts > messaging > Service Worker message routing > should route SUMMARIZE message correctly
+ ✓ messaging/messages.test.ts > messaging > Service Worker message routing > should handle provider error gracefully in Service Worker
+ ✓ messaging/messages.test.ts > messaging > Service Worker message routing > should return false for unknown message types
+ ✓ utils/storage.test.ts > storage > getSettings > should return default values when storage is empty
+ ✓ utils/storage.test.ts > storage > getSettings > should return saved values from storage
+ ✓ utils/storage.test.ts > storage > getSettings > should apply defaults for missing fields
+ ✓ utils/storage.test.ts > storage > saveSettings > should save settings to storage
+ ✓ utils/storage.test.ts > storage > saveSettings > should merge with existing settings when saving partial
+ ✓ utils/storage.test.ts > storage > saveSettings > should handle partial updates correctly
+ ✓ utils/storage.test.ts > storage > getApiKey > should return null when no API key is saved
+ ✓ utils/storage.test.ts > storage > getApiKey > should return the saved API key
+ ✓ utils/storage.test.ts > storage > getApiKey > should return null for empty string API key
+ ✓ providers/openai.test.ts > OpenAIProvider > should send correct request with auth header
+ ✓ providers/openai.test.ts > OpenAIProvider > should throw INVALID_API_KEY on 401
+ ✓ providers/openai.test.ts > OpenAIProvider > should throw RATE_LIMIT on 429
+ ✓ providers/openai.test.ts > OpenAIProvider > should throw SERVER_ERROR on 500
+ ✓ providers/openai.test.ts > OpenAIProvider > should handle AbortError as TIMEOUT
+ ✓ providers/openai.test.ts > OpenAIProvider > should throw NETWORK_ERROR on fetch failure
+ ✓ providers/openai.test.ts > OpenAIProvider > should throw INVALID_RESPONSE_FORMAT on parse error
+ ✓ providers/openai.test.ts > OpenAIProvider > should truncate content over 100000 chars
+ ✓ utils/extractor.test.ts > extractContent > should extract content from valid article DOM
+ ✓ utils/extractor.test.ts > extractContent > should return UNSUPPORTED_PAGE error for chrome:// URLs
+ ✓ utils/extractor.test.ts > extractContent > should return UNSUPPORTED_PAGE error for about: URLs
+ ✓ utils/extractor.test.ts > extractContent > should return UNSUPPORTED_PAGE error for chrome-extension:// URLs
+ ✓ utils/extractor.test.ts > extractContent > should return UNSUPPORTED_PAGE error for edge:// URLs
+ ✓ utils/extractor.test.ts > extractContent > should return PAGE_LOADING error when document is still loading
+ ✓ utils/extractor.test.ts > extractContent > should return NO_ARTICLE_CONTENT error for non-article page
+ ✓ utils/extractor.test.ts > extractContent > should return CONTENT_TOO_SHORT error for content less than 100 chars
+ ✓ utils/extractor.test.ts > extractContent > should handle missing lang attribute gracefully
+ ✓ utils/extractor.test.ts > extractContent > should not modify the original document
+
+ Test Files  6 passed (6)
+      Tests  66 passed (66)
+   Start at  10:57:35
+   Duration  1.28s (transform 174ms, setup 134ms, collect 935ms, tests 392ms, environment 1ms, prepare 532ms)
+
+[?25h

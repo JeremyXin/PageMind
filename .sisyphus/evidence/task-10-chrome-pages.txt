@@ -1,0 +1,9 @@
+  it('should return UNSUPPORTED_PAGE error for chrome:// URLs', () => {
+    const dom = createCompletedDOM('<!DOCTYPE html><html><body></body></html>', 'chrome://settings');
+    const result = extractContent(dom.window.document, 'chrome://settings');
+
+    expect(isExtractionError(result)).toBe(true);
+    if (isExtractionError(result)) {
+      expect(result.error.code).toBe('UNSUPPORTED_PAGE');
+      expect(result.error.message).toContain('不支持摘要');
+Test validates chrome:// pages return UNSUPPORTED_PAGE error

@@ -6,6 +6,7 @@ import type {
   TestConnectionPayload,
   TestConnectionResult,
   ChatSendPayload,
+  ContextMenuActionType,
 } from '../utils/types';
 import { getSettings } from '../utils/storage';
 import { OpenAIProvider } from '../providers/openai';
@@ -13,6 +14,7 @@ import { ChatProvider } from '../providers/chat';
 import { getActiveSession, addMessage } from '../utils/chatStorage';
 
 let activeChatAbortController: AbortController | null = null;
+const activeInlineAbortControllers = new Map<number, AbortController>();
 
 export default defineBackground(() => {
   console.log('Background script initialized');
@@ -76,6 +78,79 @@ export default defineBackground(() => {
               } satisfies TestConnectionResult,
             });
           });
+        return true;
+      }
+
+      if (message.type === 'TOOLBAR_INLINE_ACTION') {
+        const tabId = sender.tab?.id;
+        const payload = message.payload as { action: ContextMenuActionType; selectedText: string } | undefined;
+        if (!tabId || !payload?.selectedText?.trim()) {
+          if (tabId) {
+            chrome.tabs.sendMessage(tabId, { type: 'TOOLBAR_INLINE_ERROR', error: '无效的请求' });
+          }
+          sendResponse({ success: false });
+          return true;
+        }
+
+        const { action, selectedText } = payload;
+
+        (async () => {
+          const settings = await getSettings();
+
+          if (!settings.apiKey) {
+            chrome.tabs.sendMessage(tabId, { type: 'TOOLBAR_INLINE_ERROR', error: '请先在设置中填写 API Key' });
+            return;
+          }
+
+          const existingController = activeInlineAbortControllers.get(tabId);
+          if (existingController) {
+            existingController.abort();
+          }
+          const abortController = new AbortController();
+          activeInlineAbortControllers.set(tabId, abortController);
+
+          try {
+            const { getActionPrompt } = await import('../utils/actionPrompts');
+            const prompt = getActionPrompt(action as ContextMenuActionType, selectedText);
+            const provider = new ChatProvider({
+              apiKey: settings.apiKey,
+              baseUrl: settings.baseUrl,
+              model: settings.model,
+            });
+
+            let fullResult = '';
+            for await (const chunk of provider.chat(
+              [{ role: 'user', content: prompt }],
+              abortController.signal
+            )) {
+              fullResult += chunk;
+            }
+
+            activeInlineAbortControllers.delete(tabId);
+            chrome.tabs.sendMessage(tabId, { type: 'TOOLBAR_INLINE_RESULT', content: fullResult, action, model: settings.model });
+          } catch (error) {
+            activeInlineAbortControllers.delete(tabId);
+            if (!abortController.signal.aborted) {
+              const errorMsg = error instanceof Error ? error.message : '处理失败';
+              chrome.tabs.sendMessage(tabId, { type: 'TOOLBAR_INLINE_ERROR', error: errorMsg });
+            }
+          }
+        })();
+
+        sendResponse({ success: true });
+        return true;
+      }
+
+      if (message.type === 'TOOLBAR_INLINE_CANCEL') {
+        const tabId = sender.tab?.id;
+        if (tabId) {
+          const ctrl = activeInlineAbortControllers.get(tabId);
+          if (ctrl) {
+            ctrl.abort();
+            activeInlineAbortControllers.delete(tabId);
+          }
+        }
+        sendResponse({ success: true });
         return true;
       }
 

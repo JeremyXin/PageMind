@@ -1,0 +1,38 @@
+Task 3: Session Title Tool Function - deriveSessionTitle()
+============================================================
+
+Date: 2026-04-01
+Status: COMPLETED
+
+Files Created
+-------------
+- utils/sessionTitle.ts
+- utils/sessionTitle.test.ts
+
+Test Results
+------------
+✓ All 7 tests passed
+
+Test Cases:
+1. ✓ Long user message (>30 chars) → truncated with "…" (≤31 chars)
+2. ✓ Empty messages array → "新对话"
+3. ✓ Only assistant messages → "新对话"
+4. ✓ Emoji in first user message → correctly truncated without breaking emoji
+5. ✓ Exactly 30 chars → no ellipsis
+6. ✓ Less than 30 chars → no ellipsis
+7. ✓ Mixed roles → uses first user message
+
+Unicode/Emoji Handling Verification
+-----------------------------------
+- Uses Array.from(content) for Unicode-safe truncation
+- Emoji string '🎉'.repeat(35) correctly truncated to 30 emojis + ellipsis
+- No mojibake (replacement character �) in output
+- Grapheme cluster count verified: Array.from(result).length === 31
+
+Implementation Details
+----------------------
+- Function: deriveSessionTitle(session: ChatSession): string
+- Finds first message with role === 'user'
+- Unicode-safe truncation using Array.from()
+- Fallback: "新对话"
+- No external dependencies

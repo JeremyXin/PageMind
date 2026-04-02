@@ -1,43 +1,51 @@
 {
-  "active_plan": "/Users/songjiayin/Leibaoxin/plugin/webpage_summary/.sisyphus/plans/webpage-summary-extension.md",
-  "started_at": "2026-03-30T01:48:06.803Z",
+  "active_plan": "/Users/songjiayin/Leibaoxin/plugin/webpage_summary/.sisyphus/plans/inline-result-panel.md",
+  "started_at": "2026-04-02T02:16:49.961Z",
   "session_ids": [
-    "ses_2c69a9119ffeaLqrRa3V1Qu5Yg",
-    "ses_2c391d96cffew1mXxdvHMGD72F",
-    "ses_2c38a2993ffeChlpKZjZIxc1tZ",
-    "ses_2c38a329fffehlPRrXZy4u3t5h",
-    "ses_2c37fe65cffeYIJC8hJpptPUyz",
-    "ses_2c37fd962ffebcyfJEEXy92pcz"
+    "ses_2b949437dffeqdDKbGvBmWnl4O",
+    "ses_2b401b659ffepYvnQyZCuEnrfq",
+    "ses_2b401b99cffewMvPqFp44MJDiH",
+    "ses_2b3fd1f4effeNDIf7IVEGhJruM",
+    "ses_2b3fd1ddbffeX2KB7WLWQoz6si",
+    "ses_2b3f834d0ffeoW1YO7i0W0TsJ7",
+    "ses_2b3f54779ffevPKD5LkKZtmJIf",
+    "ses_2b37213b3ffeqzGltVtC5kDduX",
+    "ses_2b36dd3bcffe0M5e5QZbhbQ1RV",
+    "ses_2b3636bdeffeShgHa2X461JHkS",
+    "ses_2b36389afffeP3MELVEcvlty1r",
+    "ses_2b2bb9accffe7bCXG3HiMZhytg",
+    "ses_2b2bbedabffeTz0LV5uMdeW3AO",
+    "ses_2b2bb29aaffeB5ouirA93AAtqi",
+    "ses_2b2b16450ffecg4ys4NlPUVIzs",
+    "ses_2b2b0a04affeBsI9vW2bkFt6oS",
+    "ses_2b2a924cdffeImHpxPfk456QYP",
+    "ses_2b2a85bf8ffeouB9nbhM0RjYj3",
+    "ses_2b2a790e5ffeg8EKKkXNSMjKC6",
+    "ses_2b2a47daeffeBn8pj43ViX4V2t",
+    "ses_2b2a2b50effePU8zxFw1FK0Mr3",
+    "ses_2b28d6723ffe96AGWVpJP5Iz7f",
+    "ses_2b28d0424ffeY5Iq0OwYadqm6N"
   ],
-  "plan_name": "webpage-summary-extension",
+  "plan_name": "inline-result-panel",
   "agent": "atlas",
   "task_sessions": {
     "todo:1": {
       "task_key": "todo:1",
       "task_label": "1",
-      "task_title": "WXT 项目脚手架 + 工具链配置",
-      "session_id": "ses_2c391d96cffew1mXxdvHMGD72F",
+      "task_title": "Extract action prompt templates to shared module",
+      "session_id": "ses_2b401b99cffewMvPqFp44MJDiH",
       "agent": "Sisyphus-Junior",
       "category": "quick",
-      "updated_at": "2026-03-30T01:54:54.587Z"
+      "updated_at": "2026-04-02T02:23:22.929Z"
     },
-    "todo:2": {
-      "task_key": "todo:2",
-      "task_label": "2",
-      "task_title": "类型定义 + Zod Schema",
-      "session_id": "ses_2c38a329fffehlPRrXZy4u3t5h",
+    "todo:3": {
+      "task_key": "todo:3",
+      "task_label": "3",
+      "task_title": "Add background handler for TOOLBAR_INLINE_ACTION",
+      "session_id": "ses_2b36dd3bcffe0M5e5QZbhbQ1RV",
       "agent": "Sisyphus-Junior",
       "category": "quick",
-      "updated_at": "2026-03-30T02:05:20.017Z"
-    },
-    "todo:4": {
-      "task_key": "todo:4",
-      "task_label": "4",
-      "task_title": "AI Provider 抽象 + OpenAI 实现 (TDD)",
-      "session_id": "ses_2c37fe65cffeYIJC8hJpptPUyz",
-      "agent": "Sisyphus-Junior",
-      "category": "deep",
-      "updated_at": "2026-03-30T02:09:10.848Z"
+      "updated_at": "2026-04-02T05:11:27.153Z"
     }
   }
 }

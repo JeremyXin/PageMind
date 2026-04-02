@@ -1,0 +1,38 @@
+TASK 5: SessionList Component - COMPLETED
+==========================================
+
+## Files Created
+✅ entrypoints/sidepanel/components/SessionList.tsx (2085 bytes)
+✅ entrypoints/sidepanel/components/SessionList.test.tsx (4981 bytes)
+
+## Test Results
+All 6 tests PASSED (155ms execution):
+1. ✅ renders 3 sessions with title, date, and message count
+2. ✅ shows empty state when no sessions
+3. ✅ calls onSelect with sessionId when session is clicked
+4. ✅ highlights active session with blue background and left border
+5. ✅ uses deriveSessionTitle fallback when no user messages
+6. ✅ truncates long titles to 30 characters with ellipsis
+
+## Component Features
+- Props: { sessions: ChatSession[], activeSessionId: string, onSelect: (sessionId: string) => void }
+- Uses deriveSessionTitle(session) for title generation
+- Date format: "MM/DD HH:mm" (e.g., "01/16 08:45")
+- Message count display: "X 条消息"
+- Active session styling: bg-blue-50 + border-l-4 border-blue-500
+- Sorted by createdAt descending (newest first)
+- Empty state: "暂无历史会话" in gray text
+
+## Styling Patterns
+- Follows SearchBar list item pattern: border, rounded-md, hover:bg-gray-50
+- Active state: light blue background with left border accent
+- Responsive text truncation for long titles
+- Consistent spacing: p-3, space-y-2
+
+## Date Formatter
+- Custom formatDate() function extracted (MM/DD HH:mm format)
+- Matches design requirement for compact date display
+
+## Evidence
+Command: NODE_ENV=test pnpm vitest run entrypoints/sidepanel/components/SessionList.test.tsx
+Output: 6 passed tests in 155ms

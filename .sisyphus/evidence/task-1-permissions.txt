@@ -1,0 +1,22 @@
+Task T1: Types + Permissions - Permission Verification Evidence
+===============================================================
+
+Scenario: contextMenus permission declared
+Tool: grep -n "contextMenus" wxt.config.ts
+
+Command Output:
+---------------
+21:      'contextMenus',
+
+Result: PASS
+contextMenus permission found at line 21 in wxt.config.ts
+
+Permissions Array (updated):
+----------------------------
+permissions: [
+  'sidePanel',
+  'storage',
+  'activeTab',
+  'scripting',
+  'contextMenus',  // <-- NEW
+],

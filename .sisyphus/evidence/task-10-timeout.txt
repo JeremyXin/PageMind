@@ -1,0 +1,8 @@
+  it('should handle AbortError as TIMEOUT', async () => {
+    mockFetch.mockRejectedValue(new DOMException('The operation was aborted', 'AbortError'));
+    
+    await expect(provider.summarize(content)).rejects.toMatchObject({ 
+      code: 'TIMEOUT',
+      message: expect.stringContaining('30秒') 
+    });
+Test validates API timeout with AbortController

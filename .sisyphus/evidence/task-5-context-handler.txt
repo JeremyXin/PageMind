@@ -1,0 +1,89 @@
+Task T5: ChatPanel 处理 Context Menu 消息 - Evidence Report
+================================================================
+
+Date: 2026-03-31
+Status: ✅ PASS
+
+QA Scenario: Context menu message triggers AI chat
+--------------------------------------------------
+
+1. Build Verification:
+   ✅ Command: npm run build
+   ✅ Exit Code: 0
+   ✅ Result: Build succeeded with no errors
+   ✅ Output: 
+      - Built extension in 1.258 s
+      - Total size: 355.66 kB
+      - All chunks compiled successfully
+
+2. Code Review - useEffect with chrome.runtime.onMessage:
+   ✅ Location: ChatPanel.tsx, lines 97-126
+   ✅ Listener exists: YES
+   ✅ Filters for 'CONTEXT_MENU_ACTION': YES (line 99)
+   ✅ Implementation:
+      ```typescript
+      useEffect(() => {
+        const messageListener = (message: any) => {
+          if (message.type === 'CONTEXT_MENU_ACTION') {
+            const contextMsg = message as ContextMenuActionMessage;
+            let prompt = '';
+            
+            switch (contextMsg.action) {
+              case 'explain':
+                prompt = `Explain the following text in detail:\n\n"${contextMsg.selectedText}"`;
+                break;
+              case 'translate':
+                prompt = `Translate the following text to Chinese:\n\n"${contextMsg.selectedText}"`;
+                break;
+              case 'rewrite':
+                prompt = `Rewrite and improve the following text while preserving its meaning:\n\n"${contextMsg.selectedText}"`;
+                break;
+            }
+            
+            if (prompt) {
+              handleSend(prompt);
+            }
+          }
+        };
+
+        chrome.runtime.onMessage.addListener(messageListener);
+
+        return () => {
+          chrome.runtime.onMessage.removeListener(messageListener);
+        };
+      }, [sessionId, pageContext]);
+      ```
+
+3. Code Review - Proper Cleanup:
+   ✅ removeListener in cleanup: YES (line 124)
+   ✅ Cleanup function returned: YES (line 123)
+   ✅ Prevents memory leaks: YES
+
+4. Code Review - Prompt Construction:
+   ✅ 'explain' action prompt: "Explain the following text in detail:\n\n\"${selectedText}\""
+   ✅ 'translate' action prompt: "Translate the following text to Chinese:\n\n\"${selectedText}\""
+   ✅ 'rewrite' action prompt: "Rewrite and improve the following text while preserving its meaning:\n\n\"${selectedText}\""
+   ✅ All prompts match specification: YES
+
+5. Code Review - Type Safety:
+   ✅ ContextMenuActionMessage imported: YES (line 2)
+   ✅ Type casting applied: YES (line 100)
+   ✅ handleSend called correctly: YES (line 116)
+
+6. Integration Points:
+   ✅ handleSend function exists: YES (lines 204-227)
+   ✅ Dependencies tracked: [sessionId, pageContext]
+   ✅ No conflicts with existing code: YES
+
+ACCEPTANCE CRITERIA CHECKLIST:
+==============================
+✅ useEffect added with chrome.runtime.onMessage listener
+✅ Filters for type === 'CONTEXT_MENU_ACTION'
+✅ Constructs prompts correctly for explain/translate/rewrite
+✅ Calls existing handleSend() function with constructed prompt
+✅ Cleanup removes listener on unmount
+✅ Build passes with exit code 0
+✅ No new packages installed
+✅ No response_format added
+
+RESULT: ALL ACCEPTANCE CRITERIA MET ✅

@@ -1,0 +1,48 @@
+Task T2 Evidence: Expand SLASH_COMMANDS to 11 commands
+=====================================================
+
+## Files Modified
+
+1. entrypoints/sidepanel/components/ChatInput.tsx
+   - Updated SLASH_COMMANDS array from 1 to 11 commands
+   - Added: summarize, translate, rewrite, shorter, longer, eli5, pros-cons, actions, clear, new, help
+
+2. entrypoints/sidepanel/components/ChatInput.test.tsx
+   - Added new test suite "ChatInput slash command feature (GREEN phase - 11 commands)"
+   - Tests: typing `/` shows 11 options
+   - Tests: typing `/eli` filters to only eli5
+   - Tests: typing `/hel` filters to help
+   - Tests: clear and new are not disabled during summarizing
+
+## Test Results
+
+```
+✓ entrypoints/sidepanel/components/ChatInput.test.tsx (14 tests) 750ms
+
+Test Files  1 passed (1)
+     Tests  14 passed (14)
+```
+
+## SLASH_COMMANDS Array
+
+```typescript
+const SLASH_COMMANDS = [
+  { name: 'summarize', description: '总结当前页面内容', icon: '📄' },
+  { name: 'translate', description: '翻译页面内容', icon: '🌐' },
+  { name: 'rewrite', description: '改写内容', icon: '✏️' },
+  { name: 'shorter', description: '缩短内容', icon: '📉' },
+  { name: 'longer', description: '扩展内容', icon: '📈' },
+  { name: 'eli5', description: '简单解释', icon: '🧒' },
+  { name: 'pros-cons', description: '优缺点分析', icon: '⚖️' },
+  { name: 'actions', description: '提取行动项', icon: '✅' },
+  { name: 'clear', description: '清空对话', icon: '🗑️' },
+  { name: 'new', description: '新建对话', icon: '🆕' },
+  { name: 'help', description: '显示帮助', icon: '❓' }
+] as const;
+```
+
+## Verification
+- All 14 ChatInput tests pass
+- SLASH_COMMANDS has exactly 11 entries
+- Filtering works correctly for partial matches
+- clear/new commands are not disabled during summarizing

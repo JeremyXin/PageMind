@@ -1,0 +1,7 @@
+              <button
+                onClick={handleSummarize}
+                disabled={state === 'extracting' || state === 'summarizing'}
+                className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed disabled:hover:bg-gray-300"
+              >
+                总结本页
+Button disabled during extracting/summarizing states

@@ -1,0 +1,48 @@
+{
+    "manifest_version": 3,
+    "name": "Webpage Summary",
+    "description": "AI-powered webpage summary Chrome extension",
+    "version": "0.0.1",
+    "icons": {
+        "16": "icon/16.png",
+        "32": "icon/32.png",
+        "48": "icon/48.png",
+        "96": "icon/96.png",
+        "128": "icon/128.png"
+    },
+    "permissions": [
+        "sidePanel",
+        "storage",
+        "activeTab",
+        "scripting"
+    ],
+    "host_permissions": [
+        "https://api.openai.com/*",
+        "https://*/*",
+        "http://localhost/*",
+        "http://127.0.0.1/*"
+    ],
+    "side_panel": {
+        "default_path": "sidepanel.html"
+    },
+    "background": {
+        "service_worker": "background.js"
+    },
+    "options_ui": {
+        "page": "options.html"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "<all_urls>"
+            ],
+            "js": [
+                "content-scripts/content.js"
+            ]
+        }
+    ]
+}
+
+=== Verification ===
+{"manifest_version":3,"name":"Webpage Summary","description":"AI-powered webpage summary Chrome extension","version":"0.0.1","icons":{"16":"icon/16.png","32":"icon/32.png","48":"icon/48.png","96":"icon/96.png","128":"icon/128.png"},"permissions":["sidePanel","storage","activeTab","scripting"],"host_permissions":["https://api.openai.com/*","https://*/*","http://localhost/*","http://127.0.0.1/*"],"side_panel":{"default_path":"sidepanel.html"},"background":{"service_worker":"background.js"},"options_ui":{"page":"options.html"},"content_scripts":[{"matches":["<all_urls>"],"js":["content-scripts/content.js"]}]}
+Exit code: 0

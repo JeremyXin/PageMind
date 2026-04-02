@@ -1,0 +1,23 @@
+=== BUILD OUTPUT ===
+
+WXT 0.20.20
+ℹ Building chrome-mv3 for production with Vite 8.0.3
+✔ Built extension in 436 ms
+  ├─ .output/chrome-mv3/manifest.json                        666 B    
+  ├─ .output/chrome-mv3/options.html                         464 B    
+  ├─ .output/chrome-mv3/sidepanel.html                       474 B    
+  ├─ .output/chrome-mv3/background.js                        71.37 kB 
+  ├─ .output/chrome-mv3/chunks/main-SttOdFSV.js              191.42 kB
+  ├─ .output/chrome-mv3/chunks/options-BhG0-XK7.js           4.01 kB  
+  ├─ .output/chrome-mv3/chunks/sidepanel-B9-CHPYD.js         29.18 kB 
+  ├─ .output/chrome-mv3/content-scripts/content.js           38.36 kB 
+  ├─ .output/chrome-mv3/content-scripts/floating-toolbar.js  6.03 kB  
+  ├─ .output/chrome-mv3/assets/main-Dsh2I6d7.css             20.16 kB 
+  ├─ .output/chrome-mv3/icon/128.png                         3.07 kB  
+  ├─ .output/chrome-mv3/icon/16.png                          559 B    
+  ├─ .output/chrome-mv3/icon/32.png                          916 B    
+  ├─ .output/chrome-mv3/icon/48.png                          1.33 kB  
+  ├─ .output/chrome-mv3/icon/96.png                          2.37 kB  
+  └─ .output/chrome-mv3/wxt.svg                              1.07 kB  
+Σ Total size: 371.46 kB                                    
+✔ Finished in 567 ms

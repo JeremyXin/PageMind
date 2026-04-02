@@ -1,0 +1,39 @@
+Task 1: Test Factories + Baseline Verification
+==============================================
+
+Date: 2026-04-01
+
+## Baseline Test Results
+
+### Test Suite Summary
+- Total Test Files: 14
+- Passed: 13 files
+- Failed: 1 file (pre-existing failure in providers/openai.test.ts)
+- Total Tests: 137
+- Passed: 136
+- Failed: 1 (pre-existing)
+
+### Pre-existing Failure
+The failure in `providers/openai.test.ts` > `OpenAIProvider > should handle AbortError as TIMEOUT` 
+is a pre-existing issue unrelated to this task. The test expects a TIMEOUT error but receives 
+a DOMException.
+
+### Files Created
+1. `tests/test-utils.ts` - Factory functions for test data
+   - `createTestSession(overrides?)` - Creates ChatSession with defaults
+   - `createTestMessage(overrides?)` - Creates ChatMessage with defaults
+   - `createTestSessionWithMessages(messageCount, sessionOverrides?)` - Creates session with N messages
+
+### Files Modified
+1. `utils/chatStorage.test.ts` - Refactored 2 tests to use factories:
+   - `addMessage > should add a message and return ChatMessage with id`
+   - `clearSession > should clear messages but keep the session`
+
+### Factory Test Verification
+- All 16 tests in chatStorage.test.ts pass
+- Factory functions work correctly with the storage layer
+- No test logic or assertions were changed
+
+### Exit Code
+Exit code: 1 (due to pre-existing failure in openai.test.ts)
+Note: This is NOT related to the factory implementation.
