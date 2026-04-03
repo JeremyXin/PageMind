@@ -83,7 +83,7 @@ export default defineBackground(() => {
 
       if (message.type === 'TOOLBAR_INLINE_ACTION') {
         const tabId = sender.tab?.id;
-        const payload = message.payload as { action: ContextMenuActionType; selectedText: string } | undefined;
+        const payload = message.payload as { action: ContextMenuActionType; selectedText: string; targetLanguage?: string } | undefined;
         if (!tabId || !payload?.selectedText?.trim()) {
           if (tabId) {
             chrome.tabs.sendMessage(tabId, { type: 'TOOLBAR_INLINE_ERROR', error: '无效的请求' });
@@ -92,10 +92,11 @@ export default defineBackground(() => {
           return true;
         }
 
-        const { action, selectedText } = payload;
+        const { action, selectedText, targetLanguage: payloadTargetLanguage } = payload;
 
         (async () => {
           const settings = await getSettings();
+          const targetLanguage = payloadTargetLanguage ?? settings.targetLanguage;
 
           if (!settings.apiKey) {
             chrome.tabs.sendMessage(tabId, { type: 'TOOLBAR_INLINE_ERROR', error: '请先在设置中填写 API Key' });
@@ -111,7 +112,7 @@ export default defineBackground(() => {
 
           try {
             const { getActionPrompt } = await import('../utils/actionPrompts');
-            const prompt = getActionPrompt(action as ContextMenuActionType, selectedText);
+            const prompt = getActionPrompt(action as ContextMenuActionType, selectedText, targetLanguage);
             const provider = new ChatProvider({
               apiKey: settings.apiKey,
               baseUrl: settings.baseUrl,
@@ -127,7 +128,7 @@ export default defineBackground(() => {
             }
 
             activeInlineAbortControllers.delete(tabId);
-            chrome.tabs.sendMessage(tabId, { type: 'TOOLBAR_INLINE_RESULT', content: fullResult, action, model: settings.model });
+            chrome.tabs.sendMessage(tabId, { type: 'TOOLBAR_INLINE_RESULT', content: fullResult, action, model: settings.model, targetLanguage });
           } catch (error) {
             activeInlineAbortControllers.delete(tabId);
             if (!abortController.signal.aborted) {

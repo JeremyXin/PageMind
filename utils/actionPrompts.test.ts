@@ -29,4 +29,19 @@ describe('getActionPrompt', () => {
     const result = getActionPrompt('translate', '');
     expect(result).toBe('Translate the following text to Chinese:\n\n""');
   });
+
+  it('should use Japanese when targetLanguage is ja', () => {
+    const result = getActionPrompt('translate', testText, 'ja');
+    expect(result).toBe(`Translate the following text to Japanese:\n\n"${testText}"`);
+  });
+
+  it('should use French when targetLanguage is fr', () => {
+    const result = getActionPrompt('translate', testText, 'fr');
+    expect(result).toBe(`Translate the following text to French:\n\n"${testText}"`);
+  });
+
+  it('should default to Chinese when targetLanguage is not provided', () => {
+    const result = getActionPrompt('translate', testText);
+    expect(result).toBe(`Translate the following text to Chinese:\n\n"${testText}"`);
+  });
 });
