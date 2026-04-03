@@ -44,6 +44,7 @@ export interface ExtensionSettings {
   apiKey: string;
   baseUrl: string;
   model: string;
+  targetLanguage: string;
 }
 
 /**
@@ -194,6 +195,7 @@ export interface ContextMenuActionMessage {
 export interface ToolbarInlineActionPayload {
   action: ContextMenuActionType;
   selectedText: string;
+  targetLanguage?: string;
 }
 
 /**
@@ -204,6 +206,7 @@ export interface ToolbarInlineResultMessage {
   content: string;
   action: ContextMenuActionType;
   model: string;
+  targetLanguage?: string;
 }
 
 /**

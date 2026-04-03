@@ -1,19 +1,17 @@
-export interface ExtensionSettings {
-  apiKey: string;
-  baseUrl: string;
-  model: string;
-}
+import type { ExtensionSettings } from './types';
 
 const STORAGE_KEYS = {
   API_KEY: 'apiKey',
   BASE_URL: 'baseUrl',
   MODEL: 'model',
+  TARGET_LANGUAGE: 'targetLanguage',
 } as const;
 
 const DEFAULT_SETTINGS: ExtensionSettings = {
   apiKey: '',
   baseUrl: 'https://api.openai.com/v1',
   model: 'gpt-4o-mini',
+  targetLanguage: 'zh-CN',
 };
 
 export async function getSettings(): Promise<ExtensionSettings> {
@@ -21,12 +19,14 @@ export async function getSettings(): Promise<ExtensionSettings> {
     STORAGE_KEYS.API_KEY,
     STORAGE_KEYS.BASE_URL,
     STORAGE_KEYS.MODEL,
+    STORAGE_KEYS.TARGET_LANGUAGE,
   ]);
 
   return {
     apiKey: result[STORAGE_KEYS.API_KEY] ?? DEFAULT_SETTINGS.apiKey,
     baseUrl: result[STORAGE_KEYS.BASE_URL] ?? DEFAULT_SETTINGS.baseUrl,
     model: result[STORAGE_KEYS.MODEL] ?? DEFAULT_SETTINGS.model,
+    targetLanguage: result[STORAGE_KEYS.TARGET_LANGUAGE] ?? DEFAULT_SETTINGS.targetLanguage,
   };
 }
 
@@ -41,6 +41,9 @@ export async function saveSettings(settings: Partial<ExtensionSettings>): Promis
   }
   if (settings.model !== undefined) {
     updates[STORAGE_KEYS.MODEL] = settings.model;
+  }
+  if (settings.targetLanguage !== undefined) {
+    updates[STORAGE_KEYS.TARGET_LANGUAGE] = settings.targetLanguage;
   }
 
   await browser.storage.local.set(updates);
