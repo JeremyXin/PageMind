@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { LANGUAGES } from '../utils/languageConstants';
 
 describe('Floating Toolbar Logic', () => {
   let mockDocument: Document;
@@ -250,7 +251,6 @@ describe('Floating Toolbar Logic', () => {
 
   describe('positionToolbar with viewport boundaries', () => {
     it('should position toolbar above selection by default', () => {
-      const toolbar = mockDocument.createElement('div');
       const selectionRect = new DOMRect(100, 200, 50, 20);
 
       const toolbarHeight = 40;
@@ -265,7 +265,6 @@ describe('Floating Toolbar Logic', () => {
     });
 
     it('should position toolbar below selection if not enough space above', () => {
-      const toolbar = mockDocument.createElement('div');
       const selectionRect = new DOMRect(100, 30, 50, 20);
 
       const toolbarHeight = 40;
@@ -281,7 +280,6 @@ describe('Floating Toolbar Logic', () => {
     });
 
     it('should respect left viewport boundary', () => {
-      const toolbar = mockDocument.createElement('div');
       const selectionRect = new DOMRect(10, 200, 50, 20);
 
       const toolbarWidth = 280;
@@ -297,7 +295,6 @@ describe('Floating Toolbar Logic', () => {
     });
 
     it('should respect right viewport boundary', () => {
-      const toolbar = mockDocument.createElement('div');
       const selectionRect = new DOMRect(mockWindow.innerWidth - 50, 200, 50, 20);
 
       const toolbarWidth = 280;
@@ -451,8 +448,6 @@ describe('Floating Toolbar Logic', () => {
     });
 
     it('should have copy button that calls clipboard API', async () => {
-      const panel = mockDocument.createElement('div');
-      const actionBar = mockDocument.createElement('div');
       const copyButton = mockDocument.createElement('button');
       copyButton.id = 'wps-result-copy';
       copyButton.textContent = '📋 Copy';
@@ -491,7 +486,6 @@ describe('Floating Toolbar Logic', () => {
 
     it('should have close button that hides panel', () => {
       const panel = mockDocument.createElement('div');
-      const actionBar = mockDocument.createElement('div');
       const closeButton = mockDocument.createElement('button');
       closeButton.id = 'wps-result-close';
       closeButton.textContent = '✕';
@@ -509,7 +503,6 @@ describe('Floating Toolbar Logic', () => {
     });
 
     it('should have retry button in error state', () => {
-      const panel = mockDocument.createElement('div');
       const actionBar = mockDocument.createElement('div');
       
       const retryButton = mockDocument.createElement('button');
@@ -521,6 +514,56 @@ describe('Floating Toolbar Logic', () => {
       const foundButton = actionBar.querySelector('#wps-result-retry');
       expect(foundButton).toBeTruthy();
       expect(foundButton?.textContent).toBe('🔄 Retry');
+    });
+  });
+
+  describe('Language selector helpers', () => {
+    async function loadToolbarModule(): Promise<any> {
+      vi.resetModules();
+      vi.stubGlobal('defineContentScript', (config: any) => config);
+      return import('../entrypoints/floating-toolbar.content.ts');
+    }
+
+    it('getMetaText returns null for translate', async () => {
+      const mod: any = await loadToolbarModule();
+      expect(typeof mod.getMetaText).toBe('function');
+      expect(mod.getMetaText('translate', 'GPT')).toBeNull();
+      expect(mod.getMetaText('explain', 'GPT')).toContain('Explain');
+      expect(mod.getMetaText('rewrite', 'GPT')).toContain('Rewrite');
+    });
+
+    it('createLanguageSelectorHeader renders source and target labels', async () => {
+      const mod: any = await loadToolbarModule();
+      expect(typeof mod.createLanguageSelectorHeader).toBe('function');
+      const header = mod.createLanguageSelectorHeader('ja', 'fr');
+      expect(header.textContent).toContain('日本語');
+      expect(header.textContent).toContain('Français');
+      expect(header.textContent).toContain('→');
+      expect(header.textContent).toContain('▾');
+    });
+
+    it('createLanguageDropdown renders all languages and highlights selection', async () => {
+      const mod: any = await loadToolbarModule();
+      const onSelect = vi.fn();
+      expect(typeof mod.createLanguageDropdown).toBe('function');
+      const dropdown = mod.createLanguageDropdown('ja', onSelect);
+
+      expect(dropdown.children.length).toBe(LANGUAGES.length);
+
+      const selectedItem = dropdown.querySelector('[data-language-code="ja"]') as HTMLDivElement;
+      expect(selectedItem).toBeTruthy();
+      expect(selectedItem.style.background).toContain('linear-gradient');
+      expect(selectedItem.querySelector('span')?.style.fontWeight).toBe('600');
+    });
+
+    it('createLanguageDropdown invokes handler on item click', async () => {
+      const mod: any = await loadToolbarModule();
+      const onSelect = vi.fn();
+      expect(typeof mod.createLanguageDropdown).toBe('function');
+      const dropdown = mod.createLanguageDropdown('en', onSelect);
+      const item = dropdown.querySelector('[data-language-code="fr"]') as HTMLDivElement;
+      item.click();
+      expect(onSelect).toHaveBeenCalledWith('fr');
     });
   });
 });

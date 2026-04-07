@@ -7,6 +7,7 @@ export default function App() {
     apiKey: '',
     baseUrl: 'https://api.openai.com/v1',
     model: 'gpt-4o-mini',
+    targetLanguage: 'zh-CN',
   });
   const [showApiKey, setShowApiKey] = useState(false);
   const [isSaving, setIsSaving] = useState(false);

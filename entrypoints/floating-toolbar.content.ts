@@ -1,4 +1,221 @@
 import type { MessageRequest, ContextMenuActionType } from '@/utils/types';
+import { LANGUAGES, getLanguageLabel, DEFAULT_TARGET_LANGUAGE } from '@/utils/languageConstants';
+import { detectLanguage } from '@/utils/languageDetector';
+import { getSettings, saveSettings } from '@/utils/storage';
+
+/**
+ * Returns the meta text for explain/rewrite actions.
+ * For translate, returns null — the caller should render the language selector UI instead.
+ */
+export function getMetaText(action: string, model: string): string | null {
+  const modelLabel = model || 'AI';
+  if (action === 'translate') return null;
+  if (action === 'explain')   return `${modelLabel} · 💡 Explain`;
+  if (action === 'rewrite')   return `${modelLabel} · ✏️ Rewrite`;
+  return modelLabel;
+}
+
+/**
+ * Creates the language selector header row for translate action.
+ * Returns a div with source badge → arrow → target button.
+ */
+export function createLanguageSelectorHeader(sourceCode: string, targetCode: string, model?: string): HTMLDivElement {
+  const container = document.createElement('div');
+  Object.assign(container.style, {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    overflow: 'hidden',
+    minWidth: '0',
+  });
+
+  if (model) {
+    const modelPill = document.createElement('span');
+    modelPill.textContent = model;
+    Object.assign(modelPill.style, {
+      background: '#F1F5F9',
+      color: '#64748B',
+      fontSize: '11px',
+      fontWeight: '600',
+      padding: '4px 10px',
+      borderRadius: '20px',
+      whiteSpace: 'nowrap',
+      flexShrink: '0',
+      letterSpacing: '0.2px',
+    });
+    modelPill.style.setProperty('font-size', '11px', 'important');
+
+    const dot = document.createElement('span');
+    Object.assign(dot.style, {
+      width: '3px',
+      height: '3px',
+      background: '#CBD5E1',
+      borderRadius: '50%',
+      flexShrink: '0',
+      display: 'inline-block',
+    });
+
+    container.appendChild(modelPill);
+    container.appendChild(dot);
+  }
+
+  const sourceBadge = document.createElement('span');
+  sourceBadge.textContent = getLanguageLabel(sourceCode);
+  Object.assign(sourceBadge.style, {
+    background: '#F8FAFC',
+    color: '#64748B',
+    fontSize: '12px',
+    fontWeight: '600',
+    padding: '4px 11px',
+    borderRadius: '20px',
+    border: '1.5px solid #E2E8F0',
+    whiteSpace: 'nowrap',
+    flexShrink: '0',
+  });
+  sourceBadge.style.setProperty('font-size', '12px', 'important');
+
+  const arrowSpan = document.createElement('span');
+  arrowSpan.textContent = '→';
+  Object.assign(arrowSpan.style, {
+    flexShrink: '0',
+    color: '#94A3B8',
+    fontSize: '13px',
+  });
+
+  const targetBtn = document.createElement('span');
+  targetBtn.id = 'wps-lang-target-btn';
+  Object.assign(targetBtn.style, {
+    background: 'linear-gradient(135deg, #6366F1 0%, #7C3AED 100%)',
+    color: 'white',
+    fontSize: '12px',
+    fontWeight: '600',
+    padding: '4px 11px',
+    borderRadius: '20px',
+    cursor: 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '5px',
+    whiteSpace: 'nowrap',
+    flexShrink: '0',
+    userSelect: 'none',
+    boxShadow: '0 2px 10px rgba(99,102,241,0.3)',
+    transition: 'box-shadow 0.2s, transform 0.2s',
+  });
+  targetBtn.style.setProperty('font-size', '12px', 'important');
+  targetBtn.style.setProperty('font-weight', '600', 'important');
+
+  const targetLabel = document.createElement('span');
+  targetLabel.textContent = getLanguageLabel(targetCode);
+
+  const chevron = document.createElement('span');
+  chevron.textContent = '▾';
+  Object.assign(chevron.style, { fontSize: '9px', opacity: '0.85' });
+
+  targetBtn.appendChild(targetLabel);
+  targetBtn.appendChild(chevron);
+
+  targetBtn.addEventListener('mouseenter', () => {
+    targetBtn.style.boxShadow = '0 4px 14px rgba(99,102,241,0.45)';
+    targetBtn.style.transform = 'translateY(-1px)';
+  });
+  targetBtn.addEventListener('mouseleave', () => {
+    targetBtn.style.boxShadow = '0 2px 10px rgba(99,102,241,0.3)';
+    targetBtn.style.transform = 'translateY(0)';
+  });
+
+  container.appendChild(sourceBadge);
+  container.appendChild(arrowSpan);
+  container.appendChild(targetBtn);
+
+  return container;
+}
+
+/**
+ * Creates the language dropdown panel.
+ * @param currentTargetCode - The currently selected target language code
+ * @param onSelect - Callback invoked with the selected language code
+ */
+export function createLanguageDropdown(
+  currentTargetCode: string,
+  onSelect: (code: string) => void,
+): HTMLDivElement {
+  const dropdown = document.createElement('div');
+  dropdown.id = 'wps-lang-dropdown';
+  Object.assign(dropdown.style, {
+    position: 'absolute',
+    top: '60px',
+    left: '8px',
+    right: '8px',
+    background: 'rgba(255,255,255,0.98)',
+    borderRadius: '12px',
+    boxShadow: '0 20px 60px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05)',
+    zIndex: '10001',
+    maxHeight: '280px',
+    overflowY: 'auto',
+    padding: '8px 0',
+  });
+
+  LANGUAGES.forEach((lang, idx) => {
+    const item = document.createElement('div');
+    item.dataset.languageCode = lang.code;
+    const isSelected = lang.code === currentTargetCode;
+
+    Object.assign(item.style, {
+      margin: `${idx === 0 ? '0' : '4px'} 8px 0 8px`,
+      height: '48px',
+      padding: '0 16px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      cursor: 'pointer',
+      borderRadius: '8px',
+      background: isSelected ? 'linear-gradient(135deg, #6366F1 0%, #7C3AED 100%)' : 'transparent',
+      boxShadow: isSelected ? '0 2px 8px rgba(99,102,241,0.3)' : 'none',
+      transition: 'background 0.15s',
+    });
+
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = lang.nativeName;
+    Object.assign(nameSpan.style, {
+      fontSize: '14px',
+      fontWeight: '600',
+      color: isSelected ? 'white' : '#1E293B',
+    });
+    nameSpan.style.setProperty('font-size', '14px', 'important');
+
+    item.appendChild(nameSpan);
+
+    if (isSelected) {
+      const check = document.createElement('span');
+      check.textContent = '✓';
+      Object.assign(check.style, {
+        fontSize: '13px',
+        color: 'rgba(255,255,255,0.9)',
+        fontWeight: '600',
+      });
+      item.appendChild(check);
+    }
+
+    if (!isSelected) {
+      item.addEventListener('mouseenter', () => {
+        item.style.background = '#F8FAFC';
+      });
+      item.addEventListener('mouseleave', () => {
+        item.style.background = 'transparent';
+      });
+    }
+
+    item.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onSelect(lang.code);
+    });
+
+    dropdown.appendChild(item);
+  });
+
+  return dropdown;
+}
 
 export default defineContentScript({
   matches: ['<all_urls>'],
@@ -12,6 +229,13 @@ export default defineContentScript({
     let lastAction: string | null = null;
     let lastSelectedText: string | null = null;
     let lastModelName: string = '';
+    let lastTargetLanguage: string = DEFAULT_TARGET_LANGUAGE;
+    let languageDropdown: HTMLDivElement | null = null;
+
+    // Load saved target language from storage on init
+    getSettings().then(settings => {
+      lastTargetLanguage = settings.targetLanguage || DEFAULT_TARGET_LANGUAGE;
+    }).catch(() => { lastTargetLanguage = DEFAULT_TARGET_LANGUAGE; });
 
     /**
      * Check if toolbar should be shown for current selection
@@ -212,7 +436,7 @@ export default defineContentScript({
 
           browser.runtime.sendMessage({
             type: 'TOOLBAR_INLINE_ACTION',
-            payload: { action, selectedText },
+            payload: { action, selectedText, targetLanguage: lastTargetLanguage },
           } as MessageRequest).catch((error) => {
             console.error('Failed to send inline action:', error);
             showResultError('发送请求失败，请重试');
@@ -225,12 +449,91 @@ export default defineContentScript({
       return toolbarEl;
     }
 
-    function getMetaText(action: string, model: string): string {
-      const modelLabel = model || 'AI';
-      if (action === 'translate') return `${modelLabel} · 自动检测 → 中文`;
-      if (action === 'explain')   return `${modelLabel} · 💡 Explain`;
-      if (action === 'rewrite')   return `${modelLabel} · ✏️ Rewrite`;
-      return modelLabel;
+    /**
+     * Toggle the language dropdown visibility.
+     * Dropdown is appended to toolbar so toolbar.contains() works for click-outside detection.
+     */
+    function toggleLanguageDropdown(_targetButton: HTMLElement, currentCode: string): void {
+      // If already open, close it
+      if (languageDropdown) {
+        languageDropdown.remove();
+        languageDropdown = null;
+        return;
+      }
+
+      // Create and attach dropdown
+      languageDropdown = createLanguageDropdown(currentCode, handleLanguageSelect);
+
+      // Position it relative to the result panel (which is a child of toolbar)
+      // We append to resultPanel so it overlays panel content below the header
+      if (resultPanel) {
+        Object.assign(languageDropdown.style, {
+          position: 'absolute',
+          top: '52px',
+          left: '8px',
+          right: '8px',
+          zIndex: '10001',
+        });
+        resultPanel.appendChild(languageDropdown);
+      } else if (toolbar) {
+        toolbar.appendChild(languageDropdown);
+      }
+    }
+
+    /**
+     * Handle language selection from dropdown.
+     */
+    function handleLanguageSelect(selectedCode: string): void {
+      lastTargetLanguage = selectedCode;
+
+      // Close dropdown
+      if (languageDropdown) {
+        languageDropdown.remove();
+        languageDropdown = null;
+      }
+
+      // Persist to storage
+      saveSettings({ targetLanguage: selectedCode }).catch(() => {});
+
+      // Re-trigger translation
+      if (lastSelectedText) {
+        // Cancel current in-flight request
+        browser.runtime.sendMessage({ type: 'TOOLBAR_INLINE_CANCEL' } as MessageRequest).catch(() => {});
+
+        showResultLoading();
+
+        browser.runtime.sendMessage({
+          type: 'TOOLBAR_INLINE_ACTION',
+          payload: { action: 'translate', selectedText: lastSelectedText, targetLanguage: selectedCode },
+        } as MessageRequest).catch(() => { showResultError('发送请求失败，请重试'); });
+      }
+    }
+
+    /**
+     * Render language selector into the meta element for translate action.
+     */
+    function renderLanguageSelectorIntoMeta(metaEl: HTMLElement): void {
+      const sourceCode = detectLanguage(lastSelectedText || '');
+
+      if (sourceCode === lastTargetLanguage) {
+        lastTargetLanguage = sourceCode === 'en' ? 'zh-CN' : 'en';
+      }
+
+      const selectorHeader = createLanguageSelectorHeader(sourceCode, lastTargetLanguage, lastModelName || undefined);
+
+      // Clear existing content
+      metaEl.textContent = '';
+      metaEl.appendChild(selectorHeader);
+
+      // Wire up target button click
+      const targetBtn = selectorHeader.querySelector('#wps-lang-target-btn') as HTMLElement;
+      if (targetBtn) {
+        targetBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleLanguageDropdown(targetBtn, lastTargetLanguage);
+        });
+      }
     }
 
     /**
@@ -245,12 +548,12 @@ export default defineContentScript({
         top: '100%',
         left: '0',
         marginTop: '8px',
-        width: '340px',
-        maxHeight: '340px',
+        width: '420px',
+        maxHeight: '480px',
         backgroundColor: '#ffffff',
-        borderRadius: '12px',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)',
-        border: '1px solid rgba(0,0,0,0.09)',
+        borderRadius: '14px',
+        boxShadow: '0 12px 48px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04)',
+        border: 'none',
         overflow: 'hidden',
         display: 'none',
         flexDirection: 'column',
@@ -272,39 +575,52 @@ export default defineContentScript({
       Object.assign(header.style, {
         display: 'flex',
         alignItems: 'center',
-        padding: '0 14px',
-        height: '44px',
-        minHeight: '44px',
+        padding: '0 18px',
+        height: '52px',
+        minHeight: '52px',
         flexShrink: '0',
-        borderBottom: '1px solid rgba(0,0,0,0.07)',
-        backgroundColor: '#ffffff',
+        borderBottom: '1px solid #E8ECF4',
+        background: 'linear-gradient(180deg, #FAFBFF 0%, #FFFFFF 100%)',
+        gap: '12px',
       });
 
       const logoContainer = document.createElement('div');
       logoContainer.id = 'wps-result-logo';
       Object.assign(logoContainer.style, {
-        width: '20px',
-        height: '20px',
+        width: '26px',
+        height: '26px',
         flexShrink: '0',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
+        borderRadius: '7px',
+        boxShadow: '0 2px 8px rgba(99,102,241,0.25)',
       });
-      logoContainer.innerHTML = `<svg width="20" height="20" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="wps-logo-g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#6366F1"/><stop offset="100%" stop-color="#818CF8"/></linearGradient></defs><rect width="32" height="32" rx="8" fill="url(#wps-logo-g)"/><text x="16" y="23" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="20" font-weight="800" fill="white" text-anchor="middle">P</text></svg>`;
+      const logoText = document.createElement('span');
+      Object.assign(logoText.style, {
+        color: 'white',
+        fontWeight: '700',
+        fontSize: '14px',
+        lineHeight: '1',
+      });
+      logoText.style.setProperty('font-size', '14px', 'important');
+      logoText.textContent = 'P';
+      logoContainer.appendChild(logoText);
       header.appendChild(logoContainer);
 
       const meta = document.createElement('div');
       meta.id = 'wps-result-meta';
       Object.assign(meta.style, {
         flex: '1',
-        textAlign: 'center',
         fontSize: '12px',
         color: '#64748b',
         fontWeight: '500',
         overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        whiteSpace: 'nowrap',
-        padding: '0 8px',
+        padding: '0',
+        display: 'flex',
+        alignItems: 'center',
+        minWidth: '0',
       });
       meta.textContent = 'PageMind';
       header.appendChild(meta);
@@ -312,28 +628,35 @@ export default defineContentScript({
       const closeBtn = document.createElement('button');
       closeBtn.id = 'wps-result-close';
       Object.assign(closeBtn.style, {
-        width: '24px',
-        height: '24px',
+        width: '26px',
+        height: '26px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         border: 'none',
         backgroundColor: 'transparent',
-        borderRadius: '50%',
+        borderRadius: '7px',
         cursor: 'pointer',
-        fontSize: '14px',
-        color: '#94a3b8',
+        fontSize: '18px',
+        color: '#CBD5E1',
         flexShrink: '0',
         outline: 'none',
-        transition: 'background-color 0.15s',
+        transition: 'background-color 0.15s, color 0.15s',
+        fontWeight: '300',
+        lineHeight: '1',
       });
-      closeBtn.textContent = '✕';
-      closeBtn.addEventListener('mouseenter', () => { closeBtn.style.backgroundColor = 'rgba(0,0,0,0.06)'; });
-      closeBtn.addEventListener('mouseleave', () => { closeBtn.style.backgroundColor = 'transparent'; });
+      closeBtn.textContent = '×';
+      closeBtn.addEventListener('mouseenter', () => { closeBtn.style.backgroundColor = '#F1F5F9'; closeBtn.style.color = '#94A3B8'; });
+      closeBtn.addEventListener('mouseleave', () => { closeBtn.style.backgroundColor = 'transparent'; closeBtn.style.color = '#CBD5E1'; });
       closeBtn.addEventListener('click', () => {
         const loadingEl = panel.querySelector('#wps-result-loading') as HTMLDivElement;
         if (loadingEl && loadingEl.style.display !== 'none') {
           browser.runtime.sendMessage({ type: 'TOOLBAR_INLINE_CANCEL' } as MessageRequest).catch(() => {});
+        }
+        // Close dropdown if open
+        if (languageDropdown) {
+          languageDropdown.remove();
+          languageDropdown = null;
         }
         hideResultPanel();
         hideToolbar();
@@ -359,19 +682,19 @@ export default defineContentScript({
       contentEl.id = 'wps-result-content';
       Object.assign(contentEl.style, {
         display: 'none',
-        padding: '14px 16px',
+        padding: '20px 22px',
         flexGrow: '1',
-        fontSize: '14px',
-        lineHeight: '1.75',
-        color: '#1f2937',
+        fontSize: '15px',
+        lineHeight: '1.8',
+        color: '#1E293B',
         overflowY: 'auto',
-        maxHeight: '220px',
+        maxHeight: '300px',
         wordBreak: 'break-word',
         whiteSpace: 'pre-wrap',
       });
-      contentEl.style.setProperty('font-size', '14px', 'important');
-      contentEl.style.setProperty('line-height', '1.75', 'important');
-      contentEl.style.setProperty('color', '#1f2937', 'important');
+      contentEl.style.setProperty('font-size', '15px', 'important');
+      contentEl.style.setProperty('line-height', '1.8', 'important');
+      contentEl.style.setProperty('color', '#1E293B', 'important');
       panel.appendChild(contentEl);
 
       const footer = document.createElement('div');
@@ -380,10 +703,10 @@ export default defineContentScript({
         display: 'none',
         flexShrink: '0',
         alignItems: 'center',
-        padding: '0 14px',
-        height: '40px',
-        minHeight: '40px',
-        borderTop: '1px solid rgba(0,0,0,0.07)',
+        padding: '0 18px',
+        height: '44px',
+        minHeight: '44px',
+        borderTop: '1px solid #E8ECF4',
         backgroundColor: '#ffffff',
       });
 
@@ -499,10 +822,16 @@ export default defineContentScript({
 
       resultPanelVisible = true;
       resultPanel.style.display = 'flex';
+
       const metaElLoading = resultPanel.querySelector('#wps-result-meta') as HTMLElement;
       if (metaElLoading) {
-        metaElLoading.textContent = lastAction ? getMetaText(lastAction, lastModelName) : 'PageMind';
+        if (lastAction === 'translate') {
+          renderLanguageSelectorIntoMeta(metaElLoading);
+        } else {
+          metaElLoading.textContent = lastAction ? (getMetaText(lastAction, lastModelName) ?? 'PageMind') : 'PageMind';
+        }
       }
+
       if ((resultPanel as any).__resetThumbs) {
         (resultPanel as any).__resetThumbs();
       }
@@ -511,7 +840,7 @@ export default defineContentScript({
     /**
      * Show result panel with content
      */
-    function showResultContent(text: string, action?: string, model?: string): void {
+    function showResultContent(text: string, action?: string, model?: string, targetLanguage?: string): void {
       if (!resultPanel) {
         resultPanel = createResultPanel();
         toolbar?.appendChild(resultPanel);
@@ -519,10 +848,16 @@ export default defineContentScript({
 
       if (model) lastModelName = model;
       if (action) lastAction = action;
+      if (targetLanguage) lastTargetLanguage = targetLanguage;
 
       const metaEl = resultPanel.querySelector('#wps-result-meta') as HTMLElement;
       if (metaEl) {
-        metaEl.textContent = getMetaText(action ?? lastAction ?? '', model ?? lastModelName);
+        const effectiveAction = action ?? lastAction ?? '';
+        if (effectiveAction === 'translate') {
+          renderLanguageSelectorIntoMeta(metaEl);
+        } else {
+          metaEl.textContent = getMetaText(effectiveAction, model ?? lastModelName) ?? 'PageMind';
+        }
       }
 
       if ((resultPanel as any).__setText) {
@@ -599,7 +934,7 @@ export default defineContentScript({
             showResultLoading();
             browser.runtime.sendMessage({
               type: 'TOOLBAR_INLINE_ACTION',
-              payload: { action: lastAction, selectedText: lastSelectedText },
+              payload: { action: lastAction, selectedText: lastSelectedText, targetLanguage: lastTargetLanguage },
             } as MessageRequest).catch(() => { showResultError('发送请求失败，请重试'); });
           }
         });
@@ -715,6 +1050,11 @@ export default defineContentScript({
           }
           hideResultPanel();
         }
+        // Close dropdown if open
+        if (languageDropdown) {
+          languageDropdown.remove();
+          languageDropdown = null;
+        }
         hideToolbar();
       }
     }
@@ -727,7 +1067,10 @@ export default defineContentScript({
     // Listen for inline action results from background
     browser.runtime.onMessage.addListener((message: any) => {
       if (message.type === 'TOOLBAR_INLINE_RESULT') {
-        showResultContent(message.content as string, message.action, message.model);
+        if (message.targetLanguage) {
+          lastTargetLanguage = message.targetLanguage;
+        }
+        showResultContent(message.content as string, message.action, message.model, message.targetLanguage);
       } else if (message.type === 'TOOLBAR_INLINE_ERROR') {
         showResultError(message.error as string || '处理失败');
       }

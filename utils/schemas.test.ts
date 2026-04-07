@@ -243,12 +243,14 @@ describe('Type definitions', () => {
     const settings: ExtensionSettings = {
       apiKey: 'sk-test123',
       baseUrl: 'https://api.openai.com',
-      model: 'gpt-4'
+      model: 'gpt-4',
+      targetLanguage: 'zh-CN'
     };
 
     expect(settings.apiKey).toBe('sk-test123');
     expect(settings.baseUrl).toBe('https://api.openai.com');
     expect(settings.model).toBe('gpt-4');
+    expect(settings.targetLanguage).toBe('zh-CN');
   });
 
   it('MessageType enum should have expected values', () => {
