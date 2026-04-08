@@ -97,6 +97,12 @@ beforeEach(() => {
       query: vi.fn().mockResolvedValue([{ url: "https://example.com" }]),
       sendMessage: vi.fn(),
     },
+    storage: {
+      local: {
+        get: vi.fn().mockResolvedValue({ activeAgentRole: 'general' }),
+        set: vi.fn().mockResolvedValue(undefined),
+      },
+    },
   } as any;
 });
 

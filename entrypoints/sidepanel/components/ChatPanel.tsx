@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import type { ChatMessage, SummaryResult, ContextMenuActionMessage, SearchResult, ChatSession } from '~/utils/types';
+import type { ChatMessage, SummaryResult, ContextMenuActionMessage, SearchResult, ChatSession, AgentRole } from '~/utils/types';
 import * as chatStorage from '~/utils/chatStorage';
 import ChatMessageComponent from './ChatMessage';
 import ChatInput from './ChatInput';
 import SearchBar from './SearchBar';
+import AgentRoleSelector from './AgentRoleSelector';
 import { formatSummaryAsText } from '~/utils/formatSummary';
 import { getErrorMessage } from '~/utils/errorMessages';
 import { sendToBackground } from '~/messaging/sender';
+import { getActiveAgentRole, saveActiveAgentRole } from '~/utils/storage';
 
 interface ChatPanelProps {
   onOpenSettings?: () => void;
@@ -23,6 +25,7 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
   const [showSearch, setShowSearch] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [agentRole, setAgentRole] = useState<AgentRole>('general');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const portRef = useRef<chrome.runtime.Port | null>(null);
   const streamingContentRef = useRef('');
@@ -105,6 +108,19 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, streamingContent]);
+
+  useEffect(() => {
+    const loadRole = async () => {
+      const role = await getActiveAgentRole();
+      setAgentRole(role);
+    };
+    loadRole();
+  }, []);
+
+  const handleRoleChange = async (role: AgentRole) => {
+    setAgentRole(role);
+    await saveActiveAgentRole(role);
+  };
 
   useEffect(() => {
     const messageListener = (message: any) => {
@@ -702,7 +718,10 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="px-4 py-3 border-t border-gray-200 shrink-0">
+      <div className="px-4 py-3 border-t border-gray-200 shrink-0 space-y-2">
+        <div className="flex items-center gap-2">
+          <AgentRoleSelector value={agentRole} onChange={handleRoleChange} />
+        </div>
         <ChatInput 
           onSend={handleSend} 
           disabled={isStreaming} 
