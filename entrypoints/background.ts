@@ -8,10 +8,11 @@ import type {
   ChatSendPayload,
   ContextMenuActionType,
 } from '../utils/types';
-import { getSettings } from '../utils/storage';
+import { getSettings, getActiveAgentRole } from '../utils/storage';
 import { OpenAIProvider } from '../providers/openai';
 import { ChatProvider } from '../providers/chat';
 import { getActiveSession, addMessage } from '../utils/chatStorage';
+import { getAgentSystemPrompt, AGENT_TEMPERATURES } from '../providers/prompts';
 
 let activeChatAbortController: AbortController | null = null;
 const activeInlineAbortControllers = new Map<number, AbortController>();
@@ -377,7 +378,8 @@ export function handleChatPort(port: chrome.runtime.Port) {
 
         const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [];
 
-        let systemPrompt = '你是一个有帮助的AI助手。';
+        const role = await getActiveAgentRole();
+        let systemPrompt = getAgentSystemPrompt(role);
         
         if (payload.pageContext) {
           const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -385,7 +387,9 @@ export function handleChatPort(port: chrome.runtime.Port) {
           
           if (currentTabUrl === payload.pageContext.url) {
             const summary = payload.pageContext.summary;
-            systemPrompt = `你是一个有帮助的AI助手。当前用户正在浏览以下页面：
+            systemPrompt = `${systemPrompt}
+
+当前用户正在浏览以下页面：
 
 页面摘要：${summary.summary}
 
@@ -425,7 +429,9 @@ ${summary.keyPoints.map((p, i) => `${i + 1}. ${p}`).join('\n')}
 
         let fullResponse = '';
         
-        for await (const chunk of provider.chat(messages, currentAbortController.signal)) {
+        for await (const chunk of provider.chat(messages, currentAbortController.signal, {
+          temperature: AGENT_TEMPERATURES[role],
+        })) {
           fullResponse += chunk;
           port.postMessage({
             type: 'CHAT_STREAM_CHUNK',

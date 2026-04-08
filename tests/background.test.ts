@@ -11,7 +11,7 @@ vi.mock("../utils/chatStorage");
 vi.mock("../providers/chat");
 vi.mock("../providers/openai");
 
-import { getSettings } from "../utils/storage";
+import { getSettings, getActiveAgentRole } from "../utils/storage";
 import { getActiveSession, addMessage } from "../utils/chatStorage";
 import { ChatProvider } from "../providers/chat";
 
@@ -72,6 +72,7 @@ describe("background handleChatPort", () => {
       apiKey: "test-api-key",
       baseUrl: "https://api.openai.com",
       model: "gpt-4",
+      targetLanguage: "zh-CN",
     });
 
     vi.mocked(getActiveSession).mockResolvedValue({
@@ -84,6 +85,8 @@ describe("background handleChatPort", () => {
       ...message,
       id: "generated-id",
     }));
+
+    vi.mocked(getActiveAgentRole).mockResolvedValue("general");
 
     mockTabs.mockResolvedValue([{ url: "https://example.com", id: 1 }]);
 
@@ -102,6 +105,7 @@ describe("background handleChatPort", () => {
       apiKey: "",
       baseUrl: "https://api.openai.com",
       model: "gpt-4",
+      targetLanguage: "zh-CN",
     });
 
     handleChatPort(mockPort);
@@ -301,7 +305,7 @@ describe("background handleChatPort", () => {
     const systemMessage = calledMessages[0];
 
     expect(systemMessage.role).toBe("system");
-    expect(systemMessage.content).toBe("你是一个有帮助的AI助手。");
+    expect(systemMessage.content).toBe("Helpful, balanced assistant. Provide clear, accurate information with a friendly tone. Adapt to user needs and context.");
     expect(systemMessage.content).not.toContain("Test summary");
   });
 
@@ -377,5 +381,58 @@ describe("background handleChatPort", () => {
     expect(calledMessages[1].content).toBe("Message 10");
     expect(calledMessages[50].content).toBe("Message 59");
     expect(calledMessages[51].content).toBe("test");
+  });
+
+  it("should use different temperatures for different roles", async () => {
+    async function* mockGenerator() {
+      yield "Response";
+    }
+
+    mockChatProvider.chat.mockReturnValue(mockGenerator());
+
+    // Test smart-reader role
+    vi.mocked(getActiveAgentRole).mockResolvedValue("smart-reader");
+    handleChatPort(mockPort);
+
+    await messageListener({
+      type: "CHAT_SEND",
+      payload: {
+        message: "test",
+        sessionId: "test-session-id",
+      },
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(mockChatProvider.chat).toHaveBeenCalled();
+    const smartReaderOptions = mockChatProvider.chat.mock.calls[0][2];
+    expect(smartReaderOptions.temperature).toBe(0.4);
+
+    // Test creative role
+    vi.clearAllMocks();
+    vi.mocked(getActiveAgentRole).mockResolvedValue("creative");
+    mockChatProvider.chat.mockReturnValue(mockGenerator());
+    
+    const mockPort2 = {
+      name: "chat-stream",
+      postMessage: vi.fn(),
+      onMessage: { addListener: vi.fn((fn: any) => { messageListener = fn; }) },
+      onDisconnect: { addListener: vi.fn() },
+    };
+
+    handleChatPort(mockPort2);
+
+    await messageListener({
+      type: "CHAT_SEND",
+      payload: {
+        message: "test",
+        sessionId: "test-session-id",
+      },
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const creativeOptions = mockChatProvider.chat.mock.calls[0][2];
+    expect(creativeOptions.temperature).toBe(0.85);
   });
 });
