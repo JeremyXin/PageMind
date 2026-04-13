@@ -116,6 +116,7 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: number;
+  agentRole?: AgentRole;
 }
 
 /**
@@ -223,3 +224,8 @@ export interface ToolbarInlineErrorMessage {
 export interface ToolbarInlineCancelMessage {
   type: 'TOOLBAR_INLINE_CANCEL';
 }
+
+/**
+ * Agent role for AI assistant personas
+ */
+export type AgentRole = 'smart-reader' | 'general' | 'analyst' | 'creative' | 'coder';

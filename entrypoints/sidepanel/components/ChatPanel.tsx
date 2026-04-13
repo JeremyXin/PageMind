@@ -29,6 +29,7 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const portRef = useRef<chrome.runtime.Port | null>(null);
   const streamingContentRef = useRef('');
+  const agentRoleRef = useRef<AgentRole>(agentRole);
 
   const createPortListener = useCallback(() => {
     return (msg: any) => {
@@ -47,6 +48,7 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
             role: 'assistant',
             content: finalContent,
             timestamp: Date.now(),
+            agentRole: agentRoleRef.current,
           },
         ]);
         setStreamingContent('');
@@ -60,6 +62,7 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
             role: 'assistant',
             content: msg.error?.message || '发生错误',
             timestamp: Date.now(),
+            agentRole: agentRoleRef.current,
           },
         ]);
         setStreamingContent('');
@@ -113,12 +116,14 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
     const loadRole = async () => {
       const role = await getActiveAgentRole();
       setAgentRole(role);
+      agentRoleRef.current = role;
     };
     loadRole();
   }, []);
 
   const handleRoleChange = async (role: AgentRole) => {
     setAgentRole(role);
+    agentRoleRef.current = role;
     await saveActiveAgentRole(role);
   };
 
@@ -188,6 +193,7 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
         role: 'assistant',
         content: '正在生成摘要...',
         timestamp: Date.now(),
+        agentRole,
       };
 
       setMessages((prev) => [...prev, userMessage, loadingMessage]);
@@ -249,6 +255,7 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
         role: 'assistant',
         content: '正在提取页面内容...',
         timestamp: Date.now(),
+        agentRole,
       };
 
       setMessages((prev) => [...prev, userMessage, loadingMessage]);
@@ -287,6 +294,7 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
         role: 'assistant',
         content: '正在提取页面内容...',
         timestamp: Date.now(),
+        agentRole,
       };
 
       setMessages((prev) => [...prev, userMessage, loadingMessage]);
@@ -325,6 +333,7 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
         role: 'assistant',
         content: '正在提取页面内容...',
         timestamp: Date.now(),
+        agentRole,
       };
 
       setMessages((prev) => [...prev, userMessage, loadingMessage]);
@@ -363,6 +372,7 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
         role: 'assistant',
         content: '正在提取页面内容...',
         timestamp: Date.now(),
+        agentRole,
       };
 
       setMessages((prev) => [...prev, userMessage, loadingMessage]);
@@ -401,6 +411,7 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
         role: 'assistant',
         content: '正在提取页面内容...',
         timestamp: Date.now(),
+        agentRole,
       };
 
       setMessages((prev) => [...prev, userMessage, loadingMessage]);
@@ -439,6 +450,7 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
         role: 'assistant',
         content: '正在提取页面内容...',
         timestamp: Date.now(),
+        agentRole,
       };
 
       setMessages((prev) => [...prev, userMessage, loadingMessage]);
@@ -477,6 +489,7 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
         role: 'assistant',
         content: '正在提取页面内容...',
         timestamp: Date.now(),
+        agentRole,
       };
 
       setMessages((prev) => [...prev, userMessage, loadingMessage]);
@@ -527,6 +540,7 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
 /new - 开始新会话
 /help - 显示此帮助信息`,
         timestamp: Date.now(),
+        agentRole,
       };
 
       setMessages((prev) => [...prev, helpMessage]);
@@ -640,7 +654,7 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
     <div className="flex flex-col h-screen bg-white">
       <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 shrink-0">
         <h3 className="text-sm font-semibold text-gray-900">AI 对话</h3>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           {onOpenSettings && (
             <button
               onClick={onOpenSettings}
@@ -666,6 +680,7 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
           >
             📥
           </button>
+          <AgentRoleSelector value={agentRole} onChange={handleRoleChange} />
           <button
             onClick={handleClearSession}
             className="px-2 py-1 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
@@ -711,6 +726,7 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
               role: 'assistant',
               content: streamingContent,
               timestamp: Date.now(),
+              agentRole,
             }}
             isStreaming={true}
           />
@@ -718,10 +734,7 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="px-4 py-3 border-t border-gray-200 shrink-0 space-y-2">
-        <div className="flex items-center gap-2">
-          <AgentRoleSelector value={agentRole} onChange={handleRoleChange} />
-        </div>
+      <div className="px-4 py-3 border-t border-gray-200 shrink-0">
         <ChatInput 
           onSend={handleSend} 
           disabled={isStreaming} 

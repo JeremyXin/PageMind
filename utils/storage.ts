@@ -1,10 +1,13 @@
 import type { ExtensionSettings } from './types';
 
+export type AgentRole = 'smart-reader' | 'general' | 'analyst' | 'creative' | 'coder';
+
 const STORAGE_KEYS = {
   API_KEY: 'apiKey',
   BASE_URL: 'baseUrl',
   MODEL: 'model',
   TARGET_LANGUAGE: 'targetLanguage',
+  AGENT_ROLE: 'activeAgentRole',
 } as const;
 
 const DEFAULT_SETTINGS: ExtensionSettings = {
@@ -54,4 +57,23 @@ export async function getApiKey(): Promise<string | null> {
   const apiKey = result[STORAGE_KEYS.API_KEY];
 
   return apiKey && apiKey.length > 0 ? apiKey : null;
+}
+
+const VALID_AGENT_ROLES: AgentRole[] = ['smart-reader', 'general', 'analyst', 'creative', 'coder'];
+
+export async function getActiveAgentRole(): Promise<AgentRole> {
+  const result = await browser.storage.local.get(STORAGE_KEYS.AGENT_ROLE);
+  const role = result[STORAGE_KEYS.AGENT_ROLE];
+
+  if (role && VALID_AGENT_ROLES.includes(role)) {
+    return role as AgentRole;
+  }
+
+  return 'general';
+}
+
+export async function saveActiveAgentRole(role: AgentRole): Promise<void> {
+  await browser.storage.local.set({
+    [STORAGE_KEYS.AGENT_ROLE]: role,
+  });
 }

@@ -7,7 +7,8 @@ export class ChatProvider {
 
   async *chat(
     messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
-    signal: AbortSignal
+    signal: AbortSignal,
+    options?: { temperature?: number }
   ): AsyncGenerator<string, void, unknown> {
     const baseUrl = this.config.baseUrl.replace(/\/$/, '');
     
@@ -17,17 +18,23 @@ export class ChatProvider {
     const combinedSignal = this.combineAbortSignals([signal, timeoutController.signal]);
 
     try {
+      const body: Record<string, unknown> = {
+        model: this.config.model,
+        messages,
+        stream: true,
+      };
+
+      if (options?.temperature !== undefined) {
+        body.temperature = options.temperature;
+      }
+
       const response = await fetch(`${baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.config.apiKey}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          model: this.config.model,
-          messages,
-          stream: true,
-        }),
+        body: JSON.stringify(body),
         signal: combinedSignal,
       });
 

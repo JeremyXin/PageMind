@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { fakeBrowser } from '@webext-core/fake-browser';
-import { getSettings, saveSettings, getApiKey } from './storage';
+import { getSettings, saveSettings, getApiKey, getActiveAgentRole, saveActiveAgentRole } from './storage';
 
 describe('storage', () => {
   beforeEach(() => {
@@ -147,6 +147,80 @@ describe('storage', () => {
       const apiKey = await getApiKey();
 
       expect(apiKey).toBeNull();
+    });
+  });
+
+  describe('getActiveAgentRole', () => {
+    it('should return "general" by default when storage is empty', async () => {
+      const role = await getActiveAgentRole();
+
+      expect(role).toBe('general');
+    });
+
+    it('should return saved agent role from storage', async () => {
+      await fakeBrowser.storage.local.set({
+        activeAgentRole: 'analyst',
+      });
+
+      const role = await getActiveAgentRole();
+
+      expect(role).toBe('analyst');
+    });
+
+    it('should return "general" for invalid role values', async () => {
+      await fakeBrowser.storage.local.set({
+        activeAgentRole: 'invalid-role',
+      });
+
+      const role = await getActiveAgentRole();
+
+      expect(role).toBe('general');
+    });
+
+    it('should handle all valid agent roles', async () => {
+      const validRoles = ['smart-reader', 'general', 'analyst', 'creative', 'coder'] as const;
+
+      for (const testRole of validRoles) {
+        await fakeBrowser.storage.local.set({
+          activeAgentRole: testRole,
+        });
+
+        const role = await getActiveAgentRole();
+        expect(role).toBe(testRole);
+      }
+    });
+  });
+
+  describe('saveActiveAgentRole', () => {
+    it('should save agent role to storage', async () => {
+      await saveActiveAgentRole('analyst');
+
+      const stored = await fakeBrowser.storage.local.get('activeAgentRole');
+
+      expect(stored.activeAgentRole).toBe('analyst');
+    });
+
+    it('should overwrite existing agent role', async () => {
+      await fakeBrowser.storage.local.set({
+        activeAgentRole: 'general',
+      });
+
+      await saveActiveAgentRole('creative');
+
+      const stored = await fakeBrowser.storage.local.get('activeAgentRole');
+
+      expect(stored.activeAgentRole).toBe('creative');
+    });
+
+    it('should handle all valid agent roles', async () => {
+      const validRoles = ['smart-reader', 'general', 'analyst', 'creative', 'coder'] as const;
+
+      for (const testRole of validRoles) {
+        await saveActiveAgentRole(testRole);
+
+        const stored = await fakeBrowser.storage.local.get('activeAgentRole');
+        expect(stored.activeAgentRole).toBe(testRole);
+      }
     });
   });
 });
