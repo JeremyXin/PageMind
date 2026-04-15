@@ -69,7 +69,9 @@ export type MessageType =
   | 'TOOLBAR_INLINE_ACTION'
   | 'TOOLBAR_INLINE_RESULT'
   | 'TOOLBAR_INLINE_ERROR'
-  | 'TOOLBAR_INLINE_CANCEL';
+  | 'TOOLBAR_INLINE_CANCEL'
+  | 'CHAT_TOOL_CALL'
+  | 'CHAT_TOOL_RESULT';
 
 export interface TestConnectionPayload {
   apiKey: string;
@@ -117,6 +119,7 @@ export interface ChatMessage {
   content: string;
   timestamp: number;
   agentRole?: AgentRole;
+  sources?: Array<{ title: string; url: string }>;
 }
 
 /**
@@ -151,6 +154,25 @@ export interface ChatStreamEnd {
 export interface ChatStreamError {
   type: 'CHAT_STREAM_ERROR';
   error: ErrorResponse;
+}
+
+/**
+ * Message for chat tool call status
+ */
+export interface ChatToolCallMessage {
+  type: 'CHAT_TOOL_CALL';
+  toolName: string;
+  args: Record<string, unknown>;
+}
+
+/**
+ * Message for chat tool result status
+ */
+export interface ChatToolResultMessage {
+  type: 'CHAT_TOOL_RESULT';
+  toolName: string;
+  result: unknown;
+  sources?: Array<{ title: string; url: string }>;
 }
 
 /**
