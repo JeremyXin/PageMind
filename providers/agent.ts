@@ -45,6 +45,12 @@ export async function createAgentStream(
 
   if (capability.supported && capability.toolType === 'web_search_preview') {
     tools.webSearch = openai.tools.webSearchPreview();
+  } else if (capability.supported && capability.toolType === 'web_search') {
+    tools.webSearch = {
+      type: 'web_search' as const,
+      description: 'Search the web for current information',
+      parameters: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] },
+    };
   }
 
   const result = streamText({
