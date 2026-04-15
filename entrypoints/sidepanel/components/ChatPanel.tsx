@@ -26,10 +26,12 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [agentRole, setAgentRole] = useState<AgentRole>('general');
+  const [toolStatus, setToolStatus] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const portRef = useRef<chrome.runtime.Port | null>(null);
   const streamingContentRef = useRef('');
   const agentRoleRef = useRef<AgentRole>(agentRole);
+  const pendingSourcesRef = useRef<Array<{ title: string; url: string }>>([]);
 
   const createPortListener = useCallback(() => {
     return (msg: any) => {
@@ -39,8 +41,18 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
           streamingContentRef.current = next;
           return next;
         });
+      } else if (msg.type === 'CHAT_TOOL_CALL') {
+        const toolLabel = msg.toolName === 'webSearch' ? '🔍 正在搜索...' : '⚙️ 正在处理...';
+        setToolStatus(toolLabel);
+      } else if (msg.type === 'CHAT_TOOL_RESULT') {
+        setToolStatus(null);
+        if (msg.sources && msg.sources.length > 0) {
+          pendingSourcesRef.current = msg.sources;
+        }
       } else if (msg.type === 'CHAT_STREAM_END') {
         const finalContent = streamingContentRef.current;
+        const sources = pendingSourcesRef.current;
+        pendingSourcesRef.current = [];
         setMessages((prev) => [
           ...prev,
           {
@@ -49,11 +61,13 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
             content: finalContent,
             timestamp: Date.now(),
             agentRole: agentRoleRef.current,
+            sources: sources.length > 0 ? sources : undefined,
           },
         ]);
         setStreamingContent('');
         streamingContentRef.current = '';
         setIsStreaming(false);
+        setToolStatus(null);
       } else if (msg.type === 'CHAT_STREAM_ERROR') {
         setMessages((prev) => [
           ...prev,
@@ -68,6 +82,7 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
         setStreamingContent('');
         streamingContentRef.current = '';
         setIsStreaming(false);
+        setToolStatus(null);
       }
     };
   }, []);
@@ -719,6 +734,11 @@ export default function ChatPanel({ onOpenSettings }: ChatPanelProps) {
         {messages.map((msg) => (
           <ChatMessageComponent key={msg.id} message={msg} />
         ))}
+        {toolStatus && (
+          <div className="flex items-center gap-1.5 px-2 py-1 text-xs text-gray-500 animate-pulse">
+            {toolStatus}
+          </div>
+        )}
         {isStreaming && streamingContent && (
           <ChatMessageComponent
             message={{

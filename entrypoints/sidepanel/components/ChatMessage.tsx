@@ -11,6 +11,14 @@ function formatTime(timestamp: number): string {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
+function getHostname(url: string): string {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return url;
+  }
+}
+
 export default function ChatMessageComponent({ message, isStreaming = false }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const roleOption = message.agentRole
@@ -37,6 +45,22 @@ export default function ChatMessageComponent({ message, isStreaming = false }: C
         <span className="mt-1 ml-1 text-[10px] text-gray-400">
           {roleOption.emoji} {roleOption.label} · {formatTime(message.timestamp)}
         </span>
+      )}
+      {!isUser && message.sources && message.sources.length > 0 && (
+        <div className="mt-1 ml-1 flex flex-wrap gap-x-2 gap-y-0.5 max-w-[80%]">
+          {message.sources.map((source, i) => (
+            <a
+              key={i}
+              href={source.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[10px] text-blue-500 hover:text-blue-700 hover:underline truncate max-w-[200px]"
+              title={source.url}
+            >
+              📎 {source.title || getHostname(source.url)}
+            </a>
+          ))}
+        </div>
       )}
       {isUser && (
         <span className="mt-1 mr-1 text-[10px] text-gray-400">
