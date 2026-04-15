@@ -388,16 +388,8 @@ export function handleChatPort(port: chrome.runtime.Port) {
           return;
         }
 
-        // Save user message
-        await addMessage(payload.sessionId, {
-          role: 'user',
-          content: payload.message,
-          timestamp: Date.now(),
-        });
-
         const agentRole = await getActiveAgentRole();
 
-        // Build pageContext from payload
         let pageContext: PageContext | undefined;
         if (payload.pageContext) {
           const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -411,7 +403,7 @@ export function handleChatPort(port: chrome.runtime.Port) {
           }
         }
 
-        // Build conversation history (user/assistant only)
+        // Build conversation history before saving the new user message
         const historyMessages: Array<{ role: 'user' | 'assistant'; content: string }> = [];
         const activeSession = await getActiveSession();
         if (activeSession && activeSession.messages.length > 0) {
@@ -420,6 +412,12 @@ export function handleChatPort(port: chrome.runtime.Port) {
           );
         }
         historyMessages.push({ role: 'user', content: payload.message });
+
+        await addMessage(payload.sessionId, {
+          role: 'user',
+          content: payload.message,
+          timestamp: Date.now(),
+        });
 
         const agentStream = await createAgentStream({
           settings,

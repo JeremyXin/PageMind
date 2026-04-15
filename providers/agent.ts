@@ -44,14 +44,18 @@ export async function createAgentStream(
   tools.get_page_content = createPageAnalysisTool(pageContext);
 
   if (capability.supported && capability.toolType === 'web_search_preview') {
+    // OpenAI official: use SDK's hosted webSearchPreview tool
     tools.webSearch = openai.tools.webSearchPreview();
-  } else if (capability.supported && capability.toolType === 'web_search') {
-    tools.webSearch = {
-      type: 'web_search' as const,
-      description: 'Search the web for current information',
-      parameters: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] },
-    };
   }
+  // For providers using native search (web_search type: DashScope/xAI/Perplexity),
+  // search is triggered server-side via enable_search request param, NOT via function calling.
+  // Do NOT register a fake web_search tool — it would cause "Unsupported tool type" SDK error.
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const providerOptions: Record<string, any> | undefined =
+    capability.supported && capability.toolType === 'web_search'
+      ? { openai: { enable_search: true } }
+      : undefined;
 
   const result = streamText({
     model: openai.chat(settings.model),
@@ -60,6 +64,7 @@ export async function createAgentStream(
     temperature: AGENT_TEMPERATURES[agentRole],
     maxSteps: 5,
     tools,
+    ...(providerOptions ? { providerOptions } : {}),
     abortSignal: signal,
   });
 
