@@ -6,6 +6,16 @@ export default defineConfig({
   modules: ['@wxt-dev/module-react'],
   vite: () => ({
     plugins: [tailwindcss()],
+    resolve: {
+      alias: {
+        'node:http': '\0empty',
+        'node:https': '\0empty',
+        'node:net': '\0empty',
+        'node:tls': '\0empty',
+        'node:stream': '\0empty',
+        'node:zlib': '\0empty',
+      },
+    },
   }),
 
   manifest: {
