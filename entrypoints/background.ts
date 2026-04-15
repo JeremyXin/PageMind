@@ -12,7 +12,8 @@ import { getSettings, getActiveAgentRole } from '../utils/storage';
 import { OpenAIProvider } from '../providers/openai';
 import { ChatProvider } from '../providers/chat';
 import { getActiveSession, addMessage } from '../utils/chatStorage';
-import { getAgentSystemPrompt, AGENT_TEMPERATURES } from '../providers/prompts';
+import { createAgentStream } from '../providers/agent';
+import type { PageContext } from '../providers/agent';
 
 let activeChatAbortController: AbortController | null = null;
 const activeInlineAbortControllers = new Map<number, AbortController>();
@@ -346,6 +347,17 @@ async function handleSummarizeMessage(
   }
 }
 
+function extractSources(result: unknown): Array<{ title: string; url: string }> {
+  if (!result || typeof result !== 'object') return [];
+  const r = result as Record<string, unknown>;
+  if (Array.isArray(r.sources)) {
+    return (r.sources as Array<Record<string, unknown>>)
+      .filter((s) => typeof s.url === 'string')
+      .map((s) => ({ title: String(s.title ?? s.url), url: String(s.url) }));
+  }
+  return [];
+}
+
 export function handleChatPort(port: chrome.runtime.Port) {
   if (activeChatAbortController) {
     activeChatAbortController.abort();
@@ -376,77 +388,82 @@ export function handleChatPort(port: chrome.runtime.Port) {
           return;
         }
 
-        const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [];
-
-        const role = await getActiveAgentRole();
-        let systemPrompt = getAgentSystemPrompt(role);
-        
-        if (payload.pageContext) {
-          const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-          const currentTabUrl = tabs[0]?.url;
-          
-          if (currentTabUrl === payload.pageContext.url) {
-            const summary = payload.pageContext.summary;
-            systemPrompt = `${systemPrompt}
-
-当前用户正在浏览以下页面：
-
-页面摘要：${summary.summary}
-
-关键点：
-${summary.keyPoints.map((p, i) => `${i + 1}. ${p}`).join('\n')}
-
-请基于这些信息回答用户的问题。`;
-          }
-        }
-
-        messages.push({ role: 'system', content: systemPrompt });
-
-        const activeSession = await getActiveSession();
-        if (activeSession && activeSession.messages.length > 0) {
-          const historyMessages = activeSession.messages
-            .slice(-50)
-            .map(m => ({
-              role: m.role,
-              content: m.content,
-            }));
-          messages.push(...historyMessages);
-        }
-
-        messages.push({ role: 'user', content: payload.message });
-
+        // Save user message
         await addMessage(payload.sessionId, {
           role: 'user',
           content: payload.message,
           timestamp: Date.now(),
         });
 
-        const provider = new ChatProvider({
-          apiKey: settings.apiKey,
-          baseUrl: settings.baseUrl,
-          model: settings.model,
+        const agentRole = await getActiveAgentRole();
+
+        // Build pageContext from payload
+        let pageContext: PageContext | undefined;
+        if (payload.pageContext) {
+          const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+          if (tabs[0]?.url === payload.pageContext.url) {
+            pageContext = {
+              url: payload.pageContext.url,
+              title: tabs[0]?.title,
+              summary: payload.pageContext.summary?.summary,
+              keyPoints: payload.pageContext.summary?.keyPoints,
+            };
+          }
+        }
+
+        // Build conversation history (user/assistant only)
+        const historyMessages: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+        const activeSession = await getActiveSession();
+        if (activeSession && activeSession.messages.length > 0) {
+          historyMessages.push(
+            ...activeSession.messages.slice(-50).map((m) => ({ role: m.role, content: m.content }))
+          );
+        }
+        historyMessages.push({ role: 'user', content: payload.message });
+
+        const agentStream = await createAgentStream({
+          settings,
+          agentRole,
+          messages: historyMessages,
+          pageContext,
+          signal: currentAbortController.signal,
         });
 
         let fullResponse = '';
-        
-        for await (const chunk of provider.chat(messages, currentAbortController.signal, {
-          temperature: AGENT_TEMPERATURES[role],
-        })) {
-          fullResponse += chunk;
-          port.postMessage({
-            type: 'CHAT_STREAM_CHUNK',
-            content: chunk,
-          });
+        let pendingSources: Array<{ title: string; url: string }> = [];
+
+        for await (const event of agentStream) {
+          if (event.type === 'text-delta') {
+            fullResponse += event.textDelta;
+            port.postMessage({ type: 'CHAT_STREAM_CHUNK', content: event.textDelta });
+          } else if (event.type === 'tool-call') {
+            port.postMessage({
+              type: 'CHAT_TOOL_CALL',
+              toolName: event.toolName,
+              args: event.args,
+            });
+          } else if (event.type === 'tool-result') {
+            const sources = extractSources(event.result);
+            if (sources.length > 0) pendingSources = sources;
+            port.postMessage({
+              type: 'CHAT_TOOL_RESULT',
+              toolName: event.toolName,
+              result: event.result,
+              sources,
+            });
+          } else if (event.type === 'error') {
+            throw event.error;
+          }
         }
 
-        port.postMessage({
-          type: 'CHAT_STREAM_END',
-        });
+        port.postMessage({ type: 'CHAT_STREAM_END' });
 
         await addMessage(payload.sessionId, {
           role: 'assistant',
           content: fullResponse,
           timestamp: Date.now(),
+          agentRole,
+          sources: pendingSources.length > 0 ? pendingSources : undefined,
         });
       } catch (err: any) {
         port.postMessage({

@@ -10,10 +10,12 @@ vi.mock("../utils/storage");
 vi.mock("../utils/chatStorage");
 vi.mock("../providers/chat");
 vi.mock("../providers/openai");
+vi.mock("../providers/agent");
 
 import { getSettings, getActiveAgentRole } from "../utils/storage";
 import { getActiveSession, addMessage } from "../utils/chatStorage";
 import { ChatProvider } from "../providers/chat";
+import { createAgentStream } from "../providers/agent";
 
 const mockTabs = vi.fn();
 (globalThis as any).chrome = {
@@ -96,6 +98,14 @@ describe("background handleChatPort", () => {
 
     vi.mocked(ChatProvider).mockImplementation(() => mockChatProvider);
 
+    // Mock createAgentStream to return a simple async generator by default
+    vi.mocked(createAgentStream).mockResolvedValue((async function* () {
+      yield { type: 'text-delta', textDelta: 'Hello' };
+      yield { type: 'text-delta', textDelta: ' ' };
+      yield { type: 'text-delta', textDelta: 'World' };
+      yield { type: 'finish', finishReason: 'stop' };
+    })());
+
     const module = await import("../entrypoints/background");
     handleChatPort = module.handleChatPort;
   });
@@ -146,13 +156,11 @@ describe("background handleChatPort", () => {
   });
 
   it("should stream chunks and send CHAT_STREAM_END", async () => {
-    async function* mockGenerator() {
-      yield "Hello";
-      yield " ";
-      yield "World";
-    }
-
-    mockChatProvider.chat.mockReturnValue(mockGenerator());
+    vi.mocked(createAgentStream).mockResolvedValue((async function* () {
+      yield { type: 'text-delta', textDelta: 'Hello' };
+      yield { type: 'text-delta', textDelta: ' ' };
+      yield { type: 'text-delta', textDelta: 'World' };
+    })());
 
     handleChatPort(mockPort);
 
@@ -239,11 +247,11 @@ describe("background handleChatPort", () => {
       bestPractices: [],
     };
 
-    async function* mockGenerator() {
-      yield "Response";
-    }
+    vi.mocked(createAgentStream).mockResolvedValue((async function* () {
+      yield { type: 'text-delta', textDelta: 'Response' };
+    })());
 
-    mockChatProvider.chat.mockReturnValue(mockGenerator());
+    mockTabs.mockResolvedValue([{ url: "https://example.com", title: "Example", id: 1 }]);
 
     handleChatPort(mockPort);
 
@@ -261,24 +269,21 @@ describe("background handleChatPort", () => {
 
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    expect(mockChatProvider.chat).toHaveBeenCalled();
-    const calledMessages = mockChatProvider.chat.mock.calls[0][0];
-    const systemMessage = calledMessages[0];
-
-    expect(systemMessage.role).toBe("system");
-    expect(systemMessage.content).toContain("Test summary");
-    expect(systemMessage.content).toContain("Point 1");
-    expect(systemMessage.content).toContain("Point 2");
+    expect(createAgentStream).toHaveBeenCalled();
+    const callArgs = vi.mocked(createAgentStream).mock.calls[0][0];
+    
+    expect(callArgs.pageContext).toBeDefined();
+    expect(callArgs.pageContext?.url).toBe("https://example.com");
+    expect(callArgs.pageContext?.summary).toBe("Test summary");
+    expect(callArgs.pageContext?.keyPoints).toEqual(["Point 1", "Point 2"]);
   });
 
   it("should not inject page context when URL does not match", async () => {
     mockTabs.mockResolvedValue([{ url: "https://different-url.com", id: 1 }]);
 
-    async function* mockGenerator() {
-      yield "Response";
-    }
-
-    mockChatProvider.chat.mockReturnValue(mockGenerator());
+    vi.mocked(createAgentStream).mockResolvedValue((async function* () {
+      yield { type: 'text-delta', textDelta: 'Response' };
+    })());
 
     handleChatPort(mockPort);
 
@@ -301,20 +306,16 @@ describe("background handleChatPort", () => {
 
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    const calledMessages = mockChatProvider.chat.mock.calls[0][0];
-    const systemMessage = calledMessages[0];
-
-    expect(systemMessage.role).toBe("system");
-    expect(systemMessage.content).toBe("Helpful, balanced assistant. Provide clear, accurate information with a friendly tone. Adapt to user needs and context.");
-    expect(systemMessage.content).not.toContain("Test summary");
+    expect(createAgentStream).toHaveBeenCalled();
+    const callArgs = vi.mocked(createAgentStream).mock.calls[0][0];
+    
+    expect(callArgs.pageContext).toBeUndefined();
   });
 
   it("should send CHAT_STREAM_ERROR on provider error", async () => {
-    async function* mockGenerator() {
-      throw new Error("Provider failed");
-    }
-
-    mockChatProvider.chat.mockReturnValue(mockGenerator());
+    vi.mocked(createAgentStream).mockResolvedValue((async function* () {
+      yield { type: 'error', error: new Error("Provider failed") };
+    })());
 
     handleChatPort(mockPort);
 
@@ -356,11 +357,9 @@ describe("background handleChatPort", () => {
       createdAt: Date.now(),
     });
 
-    async function* mockGenerator() {
-      yield "Response";
-    }
-
-    mockChatProvider.chat.mockReturnValue(mockGenerator());
+    vi.mocked(createAgentStream).mockResolvedValue((async function* () {
+      yield { type: 'text-delta', textDelta: 'Response' };
+    })());
 
     handleChatPort(mockPort);
 
@@ -374,21 +373,19 @@ describe("background handleChatPort", () => {
 
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    const calledMessages = mockChatProvider.chat.mock.calls[0][0];
-
-    expect(calledMessages).toHaveLength(52);
-    expect(calledMessages[0].role).toBe("system");
-    expect(calledMessages[1].content).toBe("Message 10");
-    expect(calledMessages[50].content).toBe("Message 59");
-    expect(calledMessages[51].content).toBe("test");
+    expect(createAgentStream).toHaveBeenCalled();
+    const callArgs = vi.mocked(createAgentStream).mock.calls[0][0];
+    
+    expect(callArgs.messages).toHaveLength(51);
+    expect(callArgs.messages[0].content).toBe("Message 10");
+    expect(callArgs.messages[49].content).toBe("Message 59");
+    expect(callArgs.messages[50].content).toBe("test");
   });
 
   it("should use different temperatures for different roles", async () => {
-    async function* mockGenerator() {
-      yield "Response";
-    }
-
-    mockChatProvider.chat.mockReturnValue(mockGenerator());
+    vi.mocked(createAgentStream).mockResolvedValue((async function* () {
+      yield { type: 'text-delta', textDelta: 'Response' };
+    })());
 
     // Test smart-reader role
     vi.mocked(getActiveAgentRole).mockResolvedValue("smart-reader");
@@ -404,14 +401,16 @@ describe("background handleChatPort", () => {
 
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    expect(mockChatProvider.chat).toHaveBeenCalled();
-    const smartReaderOptions = mockChatProvider.chat.mock.calls[0][2];
-    expect(smartReaderOptions.temperature).toBe(0.4);
+    expect(createAgentStream).toHaveBeenCalled();
+    let callArgs = vi.mocked(createAgentStream).mock.calls[0][0];
+    expect(callArgs.agentRole).toBe("smart-reader");
 
     // Test creative role
     vi.clearAllMocks();
     vi.mocked(getActiveAgentRole).mockResolvedValue("creative");
-    mockChatProvider.chat.mockReturnValue(mockGenerator());
+    vi.mocked(createAgentStream).mockResolvedValue((async function* () {
+      yield { type: 'text-delta', textDelta: 'Response' };
+    })());
     
     const mockPort2 = {
       name: "chat-stream",
@@ -432,7 +431,7 @@ describe("background handleChatPort", () => {
 
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    const creativeOptions = mockChatProvider.chat.mock.calls[0][2];
-    expect(creativeOptions.temperature).toBe(0.85);
+    callArgs = vi.mocked(createAgentStream).mock.calls[0][0];
+    expect(callArgs.agentRole).toBe("creative");
   });
 });
